@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../theme/app_theme.dart';
 
 class AboutScreen extends StatelessWidget {
@@ -69,7 +70,10 @@ class AboutScreen extends StatelessWidget {
               const SizedBox(height: 12),
 
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.darkRed.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(20),
@@ -77,7 +81,11 @@ class AboutScreen extends StatelessWidget {
                 ),
                 child: const Text(
                   'Version 2.0.0',
-                  style: TextStyle(color: AppColors.primaryText, fontSize: 12, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: AppColors.primaryText,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
@@ -107,23 +115,64 @@ class AboutScreen extends StatelessWidget {
                     const ListTile(
                       dense: true,
                       leading: Icon(Icons.api, color: AppColors.brightRed),
-                      title: Text('Music Provider', style: TextStyle(color: AppColors.secondaryText, fontSize: 12)),
-                      subtitle: Text('Audius Decentralized Music API', style: TextStyle(color: AppColors.primaryText, fontWeight: FontWeight.bold, fontSize: 14)),
+                      title: Text(
+                        'Music Provider',
+                        style: TextStyle(
+                          color: AppColors.secondaryText,
+                          fontSize: 12,
+                        ),
+                      ),
+                      subtitle: Text(
+                        'Audius Decentralized Music API',
+                        style: TextStyle(
+                          color: AppColors.primaryText,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
                     ),
                     const Divider(color: AppColors.divider),
                     ListTile(
                       dense: true,
-                      leading: const Icon(Icons.gavel, color: AppColors.brightRed),
-                      title: const Text('Terms of Service', style: TextStyle(color: AppColors.primaryText, fontWeight: FontWeight.w600, fontSize: 14)),
-                      trailing: const Icon(Icons.arrow_forward_ios, color: AppColors.secondaryText, size: 14),
+                      leading: const Icon(
+                        Icons.gavel,
+                        color: AppColors.brightRed,
+                      ),
+                      title: const Text(
+                        'Terms of Service',
+                        style: TextStyle(
+                          color: AppColors.primaryText,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                      trailing: const Icon(
+                        Icons.arrow_forward_ios,
+                        color: AppColors.secondaryText,
+                        size: 14,
+                      ),
                       onTap: () {},
                     ),
                     const Divider(color: AppColors.divider),
                     ListTile(
                       dense: true,
-                      leading: const Icon(Icons.privacy_tip_outlined, color: AppColors.brightRed),
-                      title: const Text('Privacy Policy', style: TextStyle(color: AppColors.primaryText, fontWeight: FontWeight.w600, fontSize: 14)),
-                      trailing: const Icon(Icons.arrow_forward_ios, color: AppColors.secondaryText, size: 14),
+                      leading: const Icon(
+                        Icons.privacy_tip_outlined,
+                        color: AppColors.brightRed,
+                      ),
+                      title: const Text(
+                        'Privacy Policy',
+                        style: TextStyle(
+                          color: AppColors.primaryText,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                      trailing: const Icon(
+                        Icons.arrow_forward_ios,
+                        color: AppColors.secondaryText,
+                        size: 14,
+                      ),
                       onTap: () {},
                     ),
                   ],

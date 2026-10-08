@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../models/song.dart';
 import '../services/audio_service.dart';
 import '../theme/app_theme.dart';
@@ -40,9 +41,16 @@ class SongDetailsScreen extends StatelessWidget {
                     height: 240,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: AppColors.brightRed, width: 1.5),
+                      border: Border.all(
+                        color: AppColors.brightRed,
+                        width: 1.5,
+                      ),
                       boxShadow: const [
-                        BoxShadow(color: AppColors.redGlow, blurRadius: 20, spreadRadius: 2),
+                        BoxShadow(
+                          color: AppColors.redGlow,
+                          blurRadius: 20,
+                          spreadRadius: 2,
+                        ),
                       ],
                     ),
                     child: ClipRRect(
@@ -52,7 +60,11 @@ class SongDetailsScreen extends StatelessWidget {
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => Container(
                           color: AppColors.card,
-                          child: const Icon(Icons.music_note, color: AppColors.brightRed, size: 80),
+                          child: const Icon(
+                            Icons.music_note,
+                            color: AppColors.brightRed,
+                            size: 80,
+                          ),
                         ),
                       ),
                     ),
@@ -90,12 +102,26 @@ class SongDetailsScreen extends StatelessWidget {
                           audio.playSong(song);
                           Navigator.of(context).pop();
                         },
-                        icon: const Icon(Icons.play_arrow_rounded, color: Colors.white),
-                        label: const Text('Play', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        icon: const Icon(
+                          Icons.play_arrow_rounded,
+                          color: Colors.white,
+                        ),
+                        label: const Text(
+                          'Play',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.brightRed,
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -107,13 +133,25 @@ class SongDetailsScreen extends StatelessWidget {
                           audio.playSong(song);
                           Navigator.of(context).pop();
                         },
-                        icon: const Icon(Icons.shuffle, color: AppColors.primaryText, size: 18),
-                        label: const Text('Shuffle', style: TextStyle(color: AppColors.primaryText)),
+                        icon: const Icon(
+                          Icons.shuffle,
+                          color: AppColors.primaryText,
+                          size: 18,
+                        ),
+                        label: const Text(
+                          'Shuffle',
+                          style: TextStyle(color: AppColors.primaryText),
+                        ),
                         style: OutlinedButton.styleFrom(
                           backgroundColor: AppColors.card,
                           side: const BorderSide(color: AppColors.divider),
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -122,7 +160,9 @@ class SongDetailsScreen extends StatelessWidget {
                       IconButton(
                         icon: Icon(
                           isFav ? Icons.favorite : Icons.favorite_border,
-                          color: isFav ? AppColors.brightRed : AppColors.secondaryText,
+                          color: isFav
+                              ? AppColors.brightRed
+                              : AppColors.secondaryText,
                           size: 26,
                         ),
                         onPressed: () => audio.toggleFavorite(song),
@@ -137,14 +177,70 @@ class SongDetailsScreen extends StatelessWidget {
                     title: 'Add to Playlist',
                     onTap: () {
                       Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const PlaylistScreen()),
+                        MaterialPageRoute(
+                          builder: (_) => const PlaylistScreen(),
+                        ),
                       );
                     },
                   ),
                   _buildOptionTile(
-                    icon: Icons.download_outlined,
-                    title: 'Download Track',
-                    onTap: () {},
+                    icon: audio.isSongDownloaded(song.id)
+                        ? Icons.download_done_rounded
+                        : Icons.download_outlined,
+                    title: audio.isSongDownloaded(song.id)
+                        ? 'Downloaded (Offline Available)'
+                        : 'Download Track',
+                    onTap: () async {
+                      if (audio.isSongDownloaded(song.id)) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Track is already downloaded and available offline.',
+                            ),
+                            backgroundColor: AppColors.card,
+                          ),
+                        );
+                        return;
+                      }
+
+                      if (!song.isDownloadable) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Track cannot be downloaded (provider permission restricted).',
+                            ),
+                            backgroundColor: AppColors.darkRed,
+                          ),
+                        );
+                        return;
+                      }
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Downloading "${song.title}"...'),
+                          backgroundColor: AppColors.card,
+                        ),
+                      );
+
+                      final file = await audio.downloadSong(song);
+                      if (file != null && context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Downloaded "${song.title}" for offline playback!',
+                            ),
+                            backgroundColor: AppColors.brightRed,
+                          ),
+                        );
+                      } else if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Download failed or cancelled.'),
+                            backgroundColor: AppColors.darkRed,
+                          ),
+                        );
+                      }
+                    },
                   ),
                   _buildOptionTile(
                     icon: Icons.subtitles_outlined,
@@ -160,7 +256,9 @@ class SongDetailsScreen extends StatelessWidget {
                     title: 'Go to Artist',
                     onTap: () {
                       Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => ArtistScreen(artistName: song.artist)),
+                        MaterialPageRoute(
+                          builder: (_) => ArtistScreen(artistName: song.artist),
+                        ),
                       );
                     },
                   ),
@@ -169,7 +267,12 @@ class SongDetailsScreen extends StatelessWidget {
                     title: 'Go to Album',
                     onTap: () {
                       Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => AlbumScreen(albumTitle: song.album, artistName: song.artist)),
+                        MaterialPageRoute(
+                          builder: (_) => AlbumScreen(
+                            albumTitle: song.album,
+                            artistName: song.artist,
+                          ),
+                        ),
                       );
                     },
                   ),
@@ -187,7 +290,11 @@ class SongDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildOptionTile({required IconData icon, required String title, required VoidCallback onTap}) {
+  Widget _buildOptionTile({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+  }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
@@ -199,9 +306,17 @@ class SongDetailsScreen extends StatelessWidget {
         leading: Icon(icon, color: AppColors.brightRed, size: 22),
         title: Text(
           title,
-          style: const TextStyle(color: AppColors.primaryText, fontSize: 14, fontWeight: FontWeight.w600),
+          style: const TextStyle(
+            color: AppColors.primaryText,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
         ),
-        trailing: const Icon(Icons.arrow_forward_ios, color: AppColors.secondaryText, size: 14),
+        trailing: const Icon(
+          Icons.arrow_forward_ios,
+          color: AppColors.secondaryText,
+          size: 14,
+        ),
         onTap: onTap,
       ),
     );

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../services/audio_service.dart';
 import '../theme/app_theme.dart';
-import 'home_screen.dart';
+import 'main_shell_screen.dart';
 import 'login_screen.dart';
 
 /// Rebuilt SignupScreen matching CREATE ACCOUNT reference screenshot
@@ -14,11 +15,20 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
-  final TextEditingController _nameController = TextEditingController(text: 'Azam Khan');
-  final TextEditingController _emailController = TextEditingController(text: 'azam.khan@gmail.com');
-  final TextEditingController _usernameController = TextEditingController(text: 'azam_khan');
-  final TextEditingController _passwordController = TextEditingController(text: 'uchiha123');
-  final TextEditingController _confirmPasswordController = TextEditingController(text: 'uchiha123');
+  final TextEditingController _nameController = TextEditingController(
+    text: 'Azam Khan',
+  );
+  final TextEditingController _emailController = TextEditingController(
+    text: 'azam.khan@gmail.com',
+  );
+  final TextEditingController _usernameController = TextEditingController(
+    text: 'azam_khan',
+  );
+  final TextEditingController _passwordController = TextEditingController(
+    text: 'uchiha123',
+  );
+  final TextEditingController _confirmPasswordController =
+      TextEditingController(text: 'uchiha123');
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -26,20 +36,26 @@ class _SignupScreenState extends State<SignupScreen> {
   void _onSignup() async {
     final name = _nameController.text.trim();
     if (name.isNotEmpty) {
-      await Provider.of<AudioPlayerService>(context, listen: false).setUserName(name);
+      await Provider.of<AudioPlayerService>(
+        context,
+        listen: false,
+      ).setUserName(name);
     }
     if (mounted) {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        MaterialPageRoute(builder: (_) => const MainShellScreen()),
       );
     }
   }
 
   void _onGoogleLogin() async {
-    await Provider.of<AudioPlayerService>(context, listen: false).setUserName('Azam Khan');
+    await Provider.of<AudioPlayerService>(
+      context,
+      listen: false,
+    ).setUserName('Azam Khan');
     if (mounted) {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        MaterialPageRoute(builder: (_) => const MainShellScreen()),
       );
     }
   }
@@ -86,13 +102,19 @@ class _SignupScreenState extends State<SignupScreen> {
                   child: Padding(
                     padding: const EdgeInsets.only(left: 12, top: 8),
                     child: IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white, size: 24),
+                      icon: const Icon(
+                        Icons.arrow_back,
+                        color: Colors.white,
+                        size: 24,
+                      ),
                       onPressed: () {
                         if (Navigator.of(context).canPop()) {
                           Navigator.of(context).pop();
                         } else {
                           Navigator.of(context).pushReplacement(
-                            MaterialPageRoute(builder: (_) => const LoginScreen()),
+                            MaterialPageRoute(
+                              builder: (_) => const LoginScreen(),
+                            ),
                           );
                         }
                       },
@@ -153,7 +175,8 @@ class _SignupScreenState extends State<SignupScreen> {
                     controller: _passwordController,
                     hintText: 'Password',
                     obscure: _obscurePassword,
-                    onToggle: () => setState(() => _obscurePassword = !_obscurePassword),
+                    onToggle: () =>
+                        setState(() => _obscurePassword = !_obscurePassword),
                   ),
                   const SizedBox(height: 12),
 
@@ -161,7 +184,9 @@ class _SignupScreenState extends State<SignupScreen> {
                     controller: _confirmPasswordController,
                     hintText: 'Confirm Password',
                     obscure: _obscureConfirmPassword,
-                    onToggle: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                    onToggle: () => setState(
+                      () => _obscureConfirmPassword = !_obscureConfirmPassword,
+                    ),
                   ),
                   const SizedBox(height: 24),
 
@@ -192,8 +217,8 @@ class _SignupScreenState extends State<SignupScreen> {
                   const SizedBox(height: 20),
 
                   // 5. SOCIAL LOGIN (Google Only)
-                  Row(
-                    children: const [
+                  const Row(
+                    children: [
                       Expanded(child: Divider(color: AppColors.divider)),
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: 12),
@@ -221,16 +246,29 @@ class _SignupScreenState extends State<SignupScreen> {
                         'https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg',
                         height: 20,
                         width: 20,
-                        errorBuilder: (_, __, ___) => const Icon(Icons.g_mobiledata, color: Colors.white, size: 24),
+                        errorBuilder: (_, __, ___) => const Icon(
+                          Icons.g_mobiledata,
+                          color: Colors.white,
+                          size: 24,
+                        ),
                       ),
                       label: const Text(
                         'Continue with Google',
-                        style: TextStyle(color: AppColors.primaryText, fontSize: 14, fontWeight: FontWeight.w600),
+                        style: TextStyle(
+                          color: AppColors.primaryText,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                       style: OutlinedButton.styleFrom(
                         backgroundColor: AppColors.card,
-                        side: const BorderSide(color: AppColors.divider, width: 1),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                        side: const BorderSide(
+                          color: AppColors.divider,
+                          width: 1,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
+                        ),
                       ),
                     ),
                   ),
@@ -242,7 +280,10 @@ class _SignupScreenState extends State<SignupScreen> {
                     children: [
                       const Text(
                         'Already have an account? ',
-                        style: TextStyle(color: AppColors.secondaryText, fontSize: 14),
+                        style: TextStyle(
+                          color: AppColors.secondaryText,
+                          fontSize: 14,
+                        ),
                       ),
                       GestureDetector(
                         onTap: () {
@@ -250,7 +291,9 @@ class _SignupScreenState extends State<SignupScreen> {
                             Navigator.of(context).pop();
                           } else {
                             Navigator.of(context).pushReplacement(
-                              MaterialPageRoute(builder: (_) => const LoginScreen()),
+                              MaterialPageRoute(
+                                builder: (_) => const LoginScreen(),
+                              ),
                             );
                           }
                         },
@@ -285,11 +328,17 @@ class _SignupScreenState extends State<SignupScreen> {
       style: const TextStyle(color: AppColors.primaryText, fontSize: 14),
       decoration: InputDecoration(
         hintText: hintText,
-        hintStyle: const TextStyle(color: AppColors.secondaryText, fontSize: 14),
+        hintStyle: const TextStyle(
+          color: AppColors.secondaryText,
+          fontSize: 14,
+        ),
         prefixIcon: Icon(icon, color: AppColors.secondaryText, size: 20),
         filled: true,
         fillColor: AppColors.card,
-        contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 14,
+          horizontal: 16,
+        ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.divider, width: 1),
@@ -314,8 +363,15 @@ class _SignupScreenState extends State<SignupScreen> {
       style: const TextStyle(color: AppColors.primaryText, fontSize: 14),
       decoration: InputDecoration(
         hintText: hintText,
-        hintStyle: const TextStyle(color: AppColors.secondaryText, fontSize: 14),
-        prefixIcon: const Icon(Icons.lock_outline, color: AppColors.secondaryText, size: 20),
+        hintStyle: const TextStyle(
+          color: AppColors.secondaryText,
+          fontSize: 14,
+        ),
+        prefixIcon: const Icon(
+          Icons.lock_outline,
+          color: AppColors.secondaryText,
+          size: 20,
+        ),
         suffixIcon: IconButton(
           icon: Icon(
             obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
@@ -326,7 +382,10 @@ class _SignupScreenState extends State<SignupScreen> {
         ),
         filled: true,
         fillColor: AppColors.card,
-        contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 14,
+          horizontal: 16,
+        ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.divider, width: 1),

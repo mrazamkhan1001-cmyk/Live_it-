@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import '../models/song.dart';
 import '../services/audio_service.dart';
 import '../theme/app_theme.dart';
 
@@ -22,7 +24,12 @@ class PlayerDetailsScreen extends StatelessWidget {
             ),
           ),
           body: song == null
-              ? const Center(child: Text('No song details available', style: TextStyle(color: AppColors.primaryText)))
+              ? const Center(
+                  child: Text(
+                    'No song details available',
+                    style: TextStyle(color: AppColors.primaryText),
+                  ),
+                )
               : SingleChildScrollView(
                   padding: const EdgeInsets.all(24.0),
                   child: Column(
@@ -33,7 +40,10 @@ class PlayerDetailsScreen extends StatelessWidget {
                         height: 200,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppColors.brightRed, width: 1.5),
+                          border: Border.all(
+                            color: AppColors.brightRed,
+                            width: 1.5,
+                          ),
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(14),
@@ -42,7 +52,11 @@ class PlayerDetailsScreen extends StatelessWidget {
                             fit: BoxFit.cover,
                             errorBuilder: (_, __, ___) => Container(
                               color: AppColors.card,
-                              child: const Icon(Icons.music_note, color: AppColors.brightRed, size: 60),
+                              child: const Icon(
+                                Icons.music_note,
+                                color: AppColors.brightRed,
+                                size: 60,
+                              ),
                             ),
                           ),
                         ),
@@ -71,10 +85,32 @@ class PlayerDetailsScreen extends StatelessWidget {
 
                       // Technical Metadata Cards
                       _buildDetailRow(Icons.album, 'Album', song.album),
-                      _buildDetailRow(Icons.high_quality, 'Quality', 'Lossless 320 kbps MP3'),
-                      _buildDetailRow(Icons.music_note, 'Source', 'Audius Streaming API'),
-                      _buildDetailRow(Icons.speed, 'Sample Rate', '44.1 kHz / 16-bit'),
-                      _buildDetailRow(Icons.speaker_group, 'Audio Engine', 'LIVE IT High-Fidelity DSP'),
+                      if (song.genre != null && song.genre!.isNotEmpty)
+                        _buildDetailRow(Icons.category, 'Genre', song.genre!),
+                      _buildDetailRow(
+                        Icons.high_quality,
+                        'Quality',
+                        'Lossless 320 kbps MP3',
+                      ),
+                      _buildDetailRow(
+                        Icons.music_note,
+                        'Source',
+                        song.source == MusicSource.audius
+                            ? 'Audius Streaming Network'
+                            : song.source == MusicSource.local
+                            ? 'Local Storage'
+                            : 'Demo Audio',
+                      ),
+                      _buildDetailRow(
+                        Icons.speed,
+                        'Sample Rate',
+                        '44.1 kHz / 16-bit',
+                      ),
+                      _buildDetailRow(
+                        Icons.speaker_group,
+                        'Audio Engine',
+                        'LIVE IT High-Fidelity DSP',
+                      ),
                     ],
                   ),
                 ),
@@ -101,12 +137,19 @@ class PlayerDetailsScreen extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: const TextStyle(color: AppColors.secondaryText, fontSize: 12),
+                style: const TextStyle(
+                  color: AppColors.secondaryText,
+                  fontSize: 12,
+                ),
               ),
               const SizedBox(height: 2),
               Text(
                 value,
-                style: const TextStyle(color: AppColors.primaryText, fontSize: 14, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  color: AppColors.primaryText,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ],
           ),

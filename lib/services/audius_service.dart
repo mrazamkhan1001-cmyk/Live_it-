@@ -1,168 +1,470 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 import '../models/song.dart';
+import '../models/artist.dart';
+import '../models/album.dart';
+import '../models/playlist.dart';
+import 'audius/audius_client.dart';
+import 'audius/audius_cache.dart';
 
+export 'audius/audius_exceptions.dart';
+export 'audius/audius_cache.dart';
+export 'audius/audius_client.dart';
+
+/// Authoritative Data Service for Audius Decentralized Music Network
 class AudiusService {
-  /// Audius API Application Name / API Key identifier
-  static String apiKey = 'LIVE_IT_AZAM';
-  
-  static const String _apiHostUrl = 'https://api.audius.co';
-  static String? _cachedHost;
+  static final AudiusClient _client = AudiusClient();
+  static final AudiusCache _cache = AudiusCache();
 
-  static Future<String> _getHost() async {
-    if (_cachedHost != null) return _cachedHost!;
-    try {
-      final res = await http.get(Uri.parse(_apiHostUrl)).timeout(const Duration(seconds: 4));
-      if (res.statusCode == 200) {
-        final data = jsonDecode(res.body);
-        final hosts = (data['data'] as List).cast<String>();
-        if (hosts.isNotEmpty) {
-          _cachedHost = hosts.first;
-          return _cachedHost!;
-        }
-      }
-    } catch (_) {}
-    _cachedHost = 'https://discoveryprovider.audius.co';
-    return _cachedHost!;
-  }
+  static AudiusClient get client => _client;
+  static AudiusCache get cache => _cache;
 
-  static Future<List<Song>> fetchTrendingTracks() async {
-    try {
-      final host = await _getHost();
-      final url = Uri.parse('$host/v1/tracks/trending?app_name=$apiKey');
-      final res = await http.get(url).timeout(const Duration(seconds: 6));
-      if (res.statusCode == 200) {
-        final data = jsonDecode(res.body);
-        final tracksJson = data['data'] as List;
-        final songs = tracksJson.map((t) => _parseAudiusTrack(t, host)).toList();
-        if (songs.isNotEmpty) return songs;
-      }
-    } catch (_) {}
-    return _getFallbackSampleSongs();
-  }
+  /// Fetch trending tracks from Audius with caching
+  static Future<List<Song>> fetchTrendingTracks({
+    String? genre,
+    String? time,
+    int limit = 20,
+    int offset = 0,
+    bool forceRefresh = false,
+  }) async {
+    final cacheKey =
+        'trending_${genre ?? "all"}_${time ?? "all"}_${limit}_$offset';
+    if (!forceRefresh) {
+      final cached = _cache.get<List<Song>>(cacheKey);
+      if (cached != null) return cached;
+    }
 
-  static Future<List<Song>> searchTracks(String query) async {
-    if (query.trim().isEmpty) return fetchTrendingTracks();
-    try {
-      final host = await _getHost();
-      final url = Uri.parse('$host/v1/tracks/search?query=${Uri.encodeComponent(query)}&app_name=$apiKey');
-      final res = await http.get(url).timeout(const Duration(seconds: 6));
-      if (res.statusCode == 200) {
-        final data = jsonDecode(res.body);
-        final tracksJson = data['data'] as List;
-        return tracksJson.map((t) => _parseAudiusTrack(t, host)).toList();
-      }
-    } catch (_) {}
-    return _getFallbackSampleSongs().where((s) =>
-      s.title.toLowerCase().contains(query.toLowerCase()) ||
-      s.artist.toLowerCase().contains(query.toLowerCase()) ||
-      s.album.toLowerCase().contains(query.toLowerCase())
-    ).toList();
-  }
+    final queryParams = <String, String>{
+      'limit': limit.toString(),
+      'offset': offset.toString(),
+      if (genre != null && genre.isNotEmpty) 'genre': genre,
+      if (time != null && time.isNotEmpty) 'time': time,
+    };
 
-  static Song _parseAudiusTrack(Map<String, dynamic> t, String host) {
-    final trackId = t['id']?.toString() ?? '';
-    final title = t['title'] ?? 'Uchiha Vibe';
-    final user = t['user'] ?? {};
-    final artist = user['name'] ?? user['handle'] ?? 'Uchiha Clan';
-    final artwork = t['artwork'] != null ? t['artwork']['480x480'] ?? t['artwork']['150x150'] ?? '' : '';
-    final duration = (t['duration'] as num? ?? 196).toInt() * 1000;
-    final streamUrl = '$host/v1/tracks/$trackId/stream?app_name=$apiKey';
-    final isDownloadable = t['downloadable'] == true;
-
-    return Song(
-      id: trackId,
-      title: title,
-      artist: artist,
-      album: 'Uchiha Vibes',
-      artworkUrl: artwork.isNotEmpty ? artwork : 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500',
-      streamUrl: streamUrl,
-      durationMs: duration,
-      isDownloadable: isDownloadable,
-      lyrics: [
-        "I wake up to the sounds",
-        "of the silence that allows",
-        "For my mind to run",
-        "around with my ear up",
-        "To the ground I'm searching",
-        "to behold the stories",
-        "that are told",
-        "When my back is to the",
-        "world that was smiling",
-        "when I turned"
-      ],
+    final response = await _client.request(
+      '/v1/tracks/trending',
+      queryParameters: queryParams,
     );
+
+    if (response is Map && response['data'] is List) {
+      final host = _client.activeHost;
+      final tracks = (response['data'] as List)
+          .whereType<Map<String, dynamic>>()
+          .map((t) => Song.fromAudiusJson(t, host, appName: _client.appName))
+          .toList();
+
+      _cache.set<List<Song>>(
+        cacheKey,
+        tracks,
+        ttl: AudiusCache.defaultTrendingTtl,
+      );
+      return tracks;
+    }
+
+    return [];
   }
 
-  static List<Song> _getFallbackSampleSongs() {
-    return [
-      Song(
-        id: 'audius_1',
-        title: 'Uchiha Spirit',
-        artist: 'Anime Lo-Fi Beats',
-        album: 'Uchiha Vibes',
-        artworkUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500',
-        streamUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-        durationMs: 196000,
-        isFavorite: false,
-        lyrics: [
-          "I wake up to the sounds",
-          "of the silence that allows",
-          "For my mind to run",
-          "around with my ear up",
-          "To the ground I'm searching"
-        ],
-      ),
-      Song(
-        id: 'audius_2',
-        title: 'Heat Waves',
-        artist: 'Glass Animals',
-        album: 'Chill Phase',
-        artworkUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500',
-        streamUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
-        durationMs: 238000,
-        isFavorite: false,
-        lyrics: [
-          "Usually I hate this time of year",
-          "Late June, back in heat waves",
-          "Roads shimmer in the sunlight",
-          "Always thinkin' 'bout you"
-        ],
-      ),
-      Song(
-        id: 'audius_3',
-        title: 'Shadow Clone',
-        artist: 'Naruto Beats',
-        album: 'Anime Hits',
-        artworkUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500',
-        streamUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
-        durationMs: 185000,
-        isFavorite: false,
-        lyrics: [
-          "When the days are cold",
-          "And the cards all fold"
-        ],
-      ),
-      Song(
-        id: 'audius_4',
-        title: 'My Ordinary Life',
-        artist: 'The Living Tombstone',
-        album: 'Uchiha Vibes',
-        artworkUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500',
-        streamUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
-        durationMs: 220000,
-        isFavorite: false,
-      ),
-      Song(
-        id: 'audius_5',
-        title: 'Sharingans Awakening',
-        artist: 'Konoha Chill',
-        album: 'Anime Hits',
-        artworkUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=500',
-        streamUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3',
-        durationMs: 212000,
-        isFavorite: false,
-      ),
-    ];
+  /// Search tracks on Audius with query and pagination
+  static Future<List<Song>> searchTracks(
+    String query, {
+    int limit = 20,
+    int offset = 0,
+    bool forceRefresh = false,
+  }) async {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) {
+      return fetchTrendingTracks(
+        limit: limit,
+        offset: offset,
+        forceRefresh: forceRefresh,
+      );
+    }
+
+    final cacheKey = 'search_${trimmed.toLowerCase()}_${limit}_$offset';
+    if (!forceRefresh) {
+      final cached = _cache.get<List<Song>>(cacheKey);
+      if (cached != null) return cached;
+    }
+
+    final queryParams = <String, String>{
+      'query': trimmed,
+      'limit': limit.toString(),
+      'offset': offset.toString(),
+    };
+
+    final response = await _client.request(
+      '/v1/tracks/search',
+      queryParameters: queryParams,
+    );
+
+    if (response is Map && response['data'] is List) {
+      final host = _client.activeHost;
+      final tracks = (response['data'] as List)
+          .whereType<Map<String, dynamic>>()
+          .map((t) => Song.fromAudiusJson(t, host, appName: _client.appName))
+          .toList();
+
+      _cache.set<List<Song>>(
+        cacheKey,
+        tracks,
+        ttl: AudiusCache.defaultSearchTtl,
+      );
+      return tracks;
+    }
+
+    return [];
+  }
+
+  /// Search artists / creators on Audius
+  static Future<List<Artist>> searchArtists(
+    String query, {
+    int limit = 20,
+    int offset = 0,
+    bool forceRefresh = false,
+  }) async {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return [];
+
+    final cacheKey = 'search_artists_${trimmed.toLowerCase()}_${limit}_$offset';
+    if (!forceRefresh) {
+      final cached = _cache.get<List<Artist>>(cacheKey);
+      if (cached != null) return cached;
+    }
+
+    final queryParams = <String, String>{
+      'query': trimmed,
+      'limit': limit.toString(),
+      'offset': offset.toString(),
+    };
+
+    final response = await _client.request(
+      '/v1/users/search',
+      queryParameters: queryParams,
+    );
+
+    if (response is Map && response['data'] is List) {
+      final artists = (response['data'] as List)
+          .whereType<Map<String, dynamic>>()
+          .map((a) => Artist.fromAudiusJson(a))
+          .toList();
+
+      _cache.set<List<Artist>>(
+        cacheKey,
+        artists,
+        ttl: AudiusCache.defaultSearchTtl,
+      );
+      return artists;
+    }
+
+    return [];
+  }
+
+  /// Search playlists on Audius
+  static Future<List<Playlist>> searchPlaylists(
+    String query, {
+    int limit = 20,
+    int offset = 0,
+    bool forceRefresh = false,
+  }) async {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return [];
+
+    final cacheKey =
+        'search_playlists_${trimmed.toLowerCase()}_${limit}_$offset';
+    if (!forceRefresh) {
+      final cached = _cache.get<List<Playlist>>(cacheKey);
+      if (cached != null) return cached;
+    }
+
+    final queryParams = <String, String>{
+      'query': trimmed,
+      'limit': limit.toString(),
+      'offset': offset.toString(),
+    };
+
+    final response = await _client.request(
+      '/v1/playlists/search',
+      queryParameters: queryParams,
+    );
+
+    if (response is Map && response['data'] is List) {
+      final host = _client.activeHost;
+      final playlists = (response['data'] as List)
+          .whereType<Map<String, dynamic>>()
+          .map(
+            (p) => Playlist.fromAudiusJson(p, host, appName: _client.appName),
+          )
+          .toList();
+
+      _cache.set<List<Playlist>>(
+        cacheKey,
+        playlists,
+        ttl: AudiusCache.defaultSearchTtl,
+      );
+      return playlists;
+    }
+
+    return [];
+  }
+
+  /// Search albums / official releases on Audius
+  static Future<List<Album>> searchAlbums(
+    String query, {
+    int limit = 20,
+    int offset = 0,
+    bool forceRefresh = false,
+  }) async {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return [];
+
+    final cacheKey = 'search_albums_${trimmed.toLowerCase()}_${limit}_$offset';
+    if (!forceRefresh) {
+      final cached = _cache.get<List<Album>>(cacheKey);
+      if (cached != null) return cached;
+    }
+
+    final queryParams = <String, String>{
+      'query': trimmed,
+      'limit': limit.toString(),
+      'offset': offset.toString(),
+    };
+
+    final response = await _client.request(
+      '/v1/playlists/search',
+      queryParameters: queryParams,
+    );
+
+    if (response is Map && response['data'] is List) {
+      final host = _client.activeHost;
+      final albums = (response['data'] as List)
+          .whereType<Map<String, dynamic>>()
+          .map((a) => Album.fromAudiusJson(a, host, appName: _client.appName))
+          .toList();
+
+      _cache.set<List<Album>>(
+        cacheKey,
+        albums,
+        ttl: AudiusCache.defaultSearchTtl,
+      );
+      return albums;
+    }
+
+    return [];
+  }
+
+  /// Get specific track details by track ID
+  static Future<Song?> getTrackDetails(
+    String trackId, {
+    bool forceRefresh = false,
+  }) async {
+    final cacheKey = 'track_$trackId';
+    if (!forceRefresh) {
+      final cached = _cache.get<Song>(cacheKey);
+      if (cached != null) return cached;
+    }
+
+    final response = await _client.request('/v1/tracks/$trackId');
+    if (response is Map && response['data'] is Map<String, dynamic>) {
+      final host = _client.activeHost;
+      final song = Song.fromAudiusJson(
+        response['data'] as Map<String, dynamic>,
+        host,
+        appName: _client.appName,
+      );
+      _cache.set<Song>(cacheKey, song, ttl: AudiusCache.defaultDetailsTtl);
+      return song;
+    }
+    return null;
+  }
+
+  /// Get direct playable stream URL for a track ID
+  static String getStreamUrl(String trackId) {
+    return _client.getStreamUrl(trackId);
+  }
+
+  /// Get artist details by user ID
+  static Future<Artist?> getArtistDetails(
+    String artistId, {
+    bool forceRefresh = false,
+  }) async {
+    final cacheKey = 'artist_$artistId';
+    if (!forceRefresh) {
+      final cached = _cache.get<Artist>(cacheKey);
+      if (cached != null) return cached;
+    }
+
+    final response = await _client.request('/v1/users/$artistId');
+    if (response is Map && response['data'] is Map<String, dynamic>) {
+      final artist = Artist.fromAudiusJson(
+        response['data'] as Map<String, dynamic>,
+      );
+      _cache.set<Artist>(cacheKey, artist, ttl: AudiusCache.defaultDetailsTtl);
+      return artist;
+    }
+    return null;
+  }
+
+  /// Get tracks created by an artist
+  static Future<List<Song>> getArtistTracks(
+    String artistId, {
+    int limit = 20,
+    bool forceRefresh = false,
+  }) async {
+    final cacheKey = 'artist_tracks_${artistId}_$limit';
+    if (!forceRefresh) {
+      final cached = _cache.get<List<Song>>(cacheKey);
+      if (cached != null) return cached;
+    }
+
+    final response = await _client.request(
+      '/v1/users/$artistId/tracks',
+      queryParameters: {'limit': limit.toString()},
+    );
+
+    if (response is Map && response['data'] is List) {
+      final host = _client.activeHost;
+      final tracks = (response['data'] as List)
+          .whereType<Map<String, dynamic>>()
+          .map((t) => Song.fromAudiusJson(t, host, appName: _client.appName))
+          .toList();
+
+      _cache.set<List<Song>>(
+        cacheKey,
+        tracks,
+        ttl: AudiusCache.defaultDetailsTtl,
+      );
+      return tracks;
+    }
+    return [];
+  }
+
+  /// Get album and its tracklist
+  static Future<Album?> getAlbum(
+    String albumId, {
+    bool forceRefresh = false,
+  }) async {
+    final cacheKey = 'album_$albumId';
+    if (!forceRefresh) {
+      final cached = _cache.get<Album>(cacheKey);
+      if (cached != null) return cached;
+    }
+
+    final response = await _client.request('/v1/playlists/$albumId');
+    if (response is Map &&
+        response['data'] is List &&
+        (response['data'] as List).isNotEmpty) {
+      final albumData =
+          (response['data'] as List).first as Map<String, dynamic>;
+      final host = _client.activeHost;
+
+      // Fetch tracks in album
+      List<Song> tracks = [];
+      try {
+        final tracksResponse = await _client.request(
+          '/v1/playlists/$albumId/tracks',
+        );
+        if (tracksResponse is Map && tracksResponse['data'] is List) {
+          tracks = (tracksResponse['data'] as List)
+              .whereType<Map<String, dynamic>>()
+              .map(
+                (t) => Song.fromAudiusJson(t, host, appName: _client.appName),
+              )
+              .toList();
+        }
+      } catch (_) {}
+
+      final album = Album.fromAudiusJson(
+        albumData,
+        host,
+        appName: _client.appName,
+        tracks: tracks,
+      );
+      _cache.set<Album>(cacheKey, album, ttl: AudiusCache.defaultDetailsTtl);
+      return album;
+    }
+    return null;
+  }
+
+  /// Fetch trending playlists on Audius
+  static Future<List<Playlist>> getTrendingPlaylists({
+    int limit = 10,
+    bool forceRefresh = false,
+  }) async {
+    final cacheKey = 'trending_playlists_$limit';
+    if (!forceRefresh) {
+      final cached = _cache.get<List<Playlist>>(cacheKey);
+      if (cached != null) return cached;
+    }
+
+    final response = await _client.request(
+      '/v1/playlists/trending',
+      queryParameters: {'limit': limit.toString()},
+    );
+
+    if (response is Map && response['data'] is List) {
+      final host = _client.activeHost;
+      final playlists = (response['data'] as List)
+          .whereType<Map<String, dynamic>>()
+          .map(
+            (p) => Playlist.fromAudiusJson(p, host, appName: _client.appName),
+          )
+          .toList();
+
+      _cache.set<List<Playlist>>(
+        cacheKey,
+        playlists,
+        ttl: AudiusCache.defaultTrendingTtl,
+      );
+      return playlists;
+    }
+    return [];
+  }
+
+  /// Get playlist and its track list
+  static Future<Playlist?> getPlaylist(
+    String playlistId, {
+    bool forceRefresh = false,
+  }) async {
+    final cacheKey = 'playlist_$playlistId';
+    if (!forceRefresh) {
+      final cached = _cache.get<Playlist>(cacheKey);
+      if (cached != null) return cached;
+    }
+
+    final response = await _client.request('/v1/playlists/$playlistId');
+    if (response is Map &&
+        response['data'] is List &&
+        (response['data'] as List).isNotEmpty) {
+      final pData = (response['data'] as List).first as Map<String, dynamic>;
+      final host = _client.activeHost;
+
+      // Fetch tracks in playlist
+      List<Song> tracks = [];
+      try {
+        final tracksResponse = await _client.request(
+          '/v1/playlists/$playlistId/tracks',
+        );
+        if (tracksResponse is Map && tracksResponse['data'] is List) {
+          tracks = (tracksResponse['data'] as List)
+              .whereType<Map<String, dynamic>>()
+              .map(
+                (t) => Song.fromAudiusJson(t, host, appName: _client.appName),
+              )
+              .toList();
+        }
+      } catch (_) {}
+
+      final playlist = Playlist.fromAudiusJson(
+        pData,
+        host,
+        appName: _client.appName,
+        tracks: tracks,
+      );
+      _cache.set<Playlist>(
+        cacheKey,
+        playlist,
+        ttl: AudiusCache.defaultDetailsTtl,
+      );
+      return playlist;
+    }
+    return null;
   }
 }

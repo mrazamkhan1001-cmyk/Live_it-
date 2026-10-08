@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../services/download_service.dart';
 import '../theme/app_theme.dart';
 
 class StorageScreen extends StatefulWidget {
@@ -9,8 +11,25 @@ class StorageScreen extends StatefulWidget {
 }
 
 class _StorageScreenState extends State<StorageScreen> {
-  double _cacheSizeMB = 124.5;
-  double _downloadSizeMB = 480.2;
+  double _cacheSizeMB = 12.4;
+  double _downloadSizeMB = 0.0;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStorageData();
+  }
+
+  Future<void> _loadStorageData() async {
+    final downloadBytes = await DownloadService.getTotalDownloadSizeBytes();
+    if (mounted) {
+      setState(() {
+        _downloadSizeMB = downloadBytes / (1024 * 1024);
+        _isLoading = false;
+      });
+    }
+  }
 
   void _clearCache() {
     setState(() {
@@ -18,22 +37,31 @@ class _StorageScreenState extends State<StorageScreen> {
     });
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('App Cache Cleared', style: TextStyle(color: Colors.white)),
+        content: Text(
+          'App Cache Cleared',
+          style: TextStyle(color: Colors.white),
+        ),
         backgroundColor: AppColors.brightRed,
       ),
     );
   }
 
-  void _clearDownloads() {
+  Future<void> _clearDownloads() async {
+    await DownloadService.clearAllDownloads();
     setState(() {
       _downloadSizeMB = 0.0;
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Downloads Cleared', style: TextStyle(color: Colors.white)),
-        backgroundColor: AppColors.brightRed,
-      ),
-    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Downloads Cleared',
+            style: TextStyle(color: Colors.white),
+          ),
+          backgroundColor: AppColors.brightRed,
+        ),
+      );
+    }
   }
 
   @override
@@ -75,7 +103,9 @@ class _StorageScreenState extends State<StorageScreen> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    '${totalMB.toStringAsFixed(1)} MB used',
+                    _isLoading
+                        ? 'Calculating...'
+                        : '${totalMB.toStringAsFixed(1)} MB used',
                     style: const TextStyle(
                       color: AppColors.primaryText,
                       fontSize: 24,
@@ -102,7 +132,9 @@ class _StorageScreenState extends State<StorageScreen> {
                             child: Container(color: AppColors.darkRed),
                           ),
                           Expanded(
-                            flex: ((1000 - totalMB) * 10).clamp(1, 10000).toInt(),
+                            flex: ((1000 - totalMB) * 10)
+                                .clamp(1, 10000)
+                                .toInt(),
                             child: Container(color: AppColors.card),
                           ),
                         ],
@@ -116,16 +148,42 @@ class _StorageScreenState extends State<StorageScreen> {
                     children: [
                       Row(
                         children: [
-                          Container(width: 10, height: 10, decoration: const BoxDecoration(color: AppColors.brightRed, shape: BoxShape.circle)),
+                          Container(
+                            width: 10,
+                            height: 10,
+                            decoration: const BoxDecoration(
+                              color: AppColors.brightRed,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
                           const SizedBox(width: 6),
-                          Text('Downloads (${_downloadSizeMB.toStringAsFixed(1)} MB)', style: const TextStyle(color: AppColors.secondaryText, fontSize: 12)),
+                          Text(
+                            'Downloads (${_downloadSizeMB.toStringAsFixed(1)} MB)',
+                            style: const TextStyle(
+                              color: AppColors.secondaryText,
+                              fontSize: 12,
+                            ),
+                          ),
                         ],
                       ),
                       Row(
                         children: [
-                          Container(width: 10, height: 10, decoration: const BoxDecoration(color: AppColors.darkRed, shape: BoxShape.circle)),
+                          Container(
+                            width: 10,
+                            height: 10,
+                            decoration: const BoxDecoration(
+                              color: AppColors.darkRed,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
                           const SizedBox(width: 6),
-                          Text('Cache (${_cacheSizeMB.toStringAsFixed(1)} MB)', style: const TextStyle(color: AppColors.secondaryText, fontSize: 12)),
+                          Text(
+                            'Cache (${_cacheSizeMB.toStringAsFixed(1)} MB)',
+                            style: const TextStyle(
+                              color: AppColors.secondaryText,
+                              fontSize: 12,
+                            ),
+                          ),
                         ],
                       ),
                     ],
@@ -146,7 +204,8 @@ class _StorageScreenState extends State<StorageScreen> {
 
             _buildActionTile(
               title: 'Clear Downloaded Songs',
-              subtitle: 'Remove offline downloaded tracks from your local device',
+              subtitle:
+                  'Remove offline downloaded tracks from your local device',
               buttonLabel: 'CLEAR DOWNLOADS',
               onPressed: _downloadSizeMB > 0 ? _clearDownloads : null,
             ),
@@ -178,12 +237,19 @@ class _StorageScreenState extends State<StorageScreen> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(color: AppColors.primaryText, fontSize: 15, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    color: AppColors.primaryText,
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: const TextStyle(color: AppColors.secondaryText, fontSize: 12),
+                  style: const TextStyle(
+                    color: AppColors.secondaryText,
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),
@@ -201,7 +267,11 @@ class _StorageScreenState extends State<StorageScreen> {
             ),
             child: Text(
               buttonLabel,
-              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
           ),
         ],

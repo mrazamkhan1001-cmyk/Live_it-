@@ -1,33 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../services/audio_service.dart';
 import '../theme/app_theme.dart';
-import '../widgets/mini_player.dart';
-import '../widgets/bottom_navigation.dart';
 import 'edit_profile_screen.dart';
 import 'theme_settings_screen.dart';
 import 'settings_screen.dart';
-import 'home_screen.dart';
-import 'search_screen.dart';
-import 'library_screen.dart';
 
 /// Redesigned Profile Screen with Full-Screen Cinematic Background and Sasuke Avatar
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  final void Function(int)? onNavigateToTab;
+
+  const ProfileScreen({super.key, this.onNavigateToTab});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  int _currentNavIndex = 3; // Profile tab active
-
   @override
   Widget build(BuildContext context) {
-    if (_currentNavIndex == 0) return const HomeScreen();
-    if (_currentNavIndex == 1) return const SearchScreen();
-    if (_currentNavIndex == 2) return const LibraryScreen();
-
     return Consumer<AudioPlayerService>(
       builder: (context, audio, child) {
         return Scaffold(
@@ -75,14 +67,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               child: Align(
                                 alignment: Alignment.centerLeft,
                                 child: IconButton(
-                                  icon: const Icon(Icons.arrow_back, color: Colors.white, size: 24),
+                                  icon: const Icon(
+                                    Icons.arrow_back,
+                                    color: Colors.white,
+                                    size: 24,
+                                  ),
                                   onPressed: () {
-                                    if (Navigator.of(context).canPop()) {
+                                    if (widget.onNavigateToTab != null) {
+                                      widget.onNavigateToTab!(0);
+                                    } else if (Navigator.of(context).canPop()) {
                                       Navigator.of(context).pop();
-                                    } else {
-                                      setState(() {
-                                        _currentNavIndex = 0;
-                                      });
                                     }
                                   },
                                 ),
@@ -100,7 +94,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   height: 82,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
-                                    border: Border.all(color: Colors.white38, width: 2),
+                                    border: Border.all(
+                                      color: Colors.white38,
+                                      width: 2,
+                                    ),
                                     boxShadow: const [
                                       BoxShadow(
                                         color: Colors.black54,
@@ -122,9 +119,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 Container(
                                   padding: const EdgeInsets.all(5),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF151515).withValues(alpha: 0.9),
+                                    color: const Color(0xFF151515)
+                                        .withValues(alpha: 0.9),
                                     shape: BoxShape.circle,
-                                    border: Border.all(color: AppColors.divider, width: 1.5),
+                                    border: Border.all(
+                                      color: AppColors.divider,
+                                      width: 1.5,
+                                    ),
                                   ),
                                   child: const Icon(
                                     Icons.camera_alt_rounded,
@@ -186,9 +187,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
                                 _buildStatColumn('Songs', '523'),
-                                Container(height: 28, width: 1, color: Colors.white24),
+                                Container(
+                                  height: 28,
+                                  width: 1,
+                                  color: Colors.white24,
+                                ),
                                 _buildStatColumn('Playlists', '12'),
-                                Container(height: 28, width: 1, color: Colors.white24),
+                                Container(
+                                  height: 28,
+                                  width: 1,
+                                  color: Colors.white24,
+                                ),
                                 _buildStatColumn('Minutes', '2.4K'),
                               ],
                             ),
@@ -196,17 +205,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                             // 9. PROFILE ACTION MENU CARDS
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 20),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                              ),
                               child: Column(
                                 children: [
                                   _buildMenuCard(
                                     context: context,
                                     icon: Icons.person_outline,
                                     title: 'Edit Profile',
-                                    trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.secondaryText, size: 22),
+                                    trailing: const Icon(
+                                      Icons.chevron_right_rounded,
+                                      color: AppColors.secondaryText,
+                                      size: 22,
+                                    ),
                                     onTap: () {
                                       Navigator.of(context).push(
-                                        MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              const EditProfileScreen(),
+                                        ),
                                       );
                                     },
                                   ),
@@ -227,7 +245,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     ),
                                     onTap: () {
                                       Navigator.of(context).push(
-                                        MaterialPageRoute(builder: (_) => const ThemeSettingsScreen()),
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              const ThemeSettingsScreen(),
+                                        ),
                                       );
                                     },
                                   ),
@@ -237,10 +258,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     context: context,
                                     icon: Icons.settings_outlined,
                                     title: 'Settings',
-                                    trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.secondaryText, size: 22),
+                                    trailing: const Icon(
+                                      Icons.chevron_right_rounded,
+                                      color: AppColors.secondaryText,
+                                      size: 22,
+                                    ),
                                     onTap: () {
                                       Navigator.of(context).push(
-                                        MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              const SettingsScreen(),
+                                        ),
                                       );
                                     },
                                   ),
@@ -272,19 +300,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                     ),
-
-                    // Persistent Mini Player (only visible if active song present)
-                    const MiniPlayer(),
-
-                    // 10. GLOBAL BOTTOM NAVIGATION (Profile active in LIVE IT red #FF1018)
-                    CustomBottomNavigation(
-                      currentIndex: _currentNavIndex,
-                      onTap: (index) {
-                        setState(() {
-                          _currentNavIndex = index;
-                        });
-                      },
-                    ),
                   ],
                 ),
               ),
@@ -309,10 +324,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SizedBox(height: 3),
         Text(
           label,
-          style: const TextStyle(
-            color: AppColors.secondaryText,
-            fontSize: 12,
-          ),
+          style: const TextStyle(color: AppColors.secondaryText, fontSize: 12),
         ),
       ],
     );

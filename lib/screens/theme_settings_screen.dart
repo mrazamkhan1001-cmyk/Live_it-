@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 
 class ThemeSettingsScreen extends StatefulWidget {
@@ -17,6 +19,26 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
     'Crimson Glow',
     'Tsukuyomi Dark',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTheme();
+  }
+
+  Future<void> _loadTheme() async {
+    final theme = await StorageService.getSelectedTheme();
+    if (mounted) {
+      setState(() {
+        _selectedTheme = theme;
+      });
+    }
+  }
+
+  void _selectTheme(String theme) {
+    setState(() => _selectedTheme = theme);
+    StorageService.saveSelectedTheme(theme);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,28 +65,41 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            ..._themes.map((t) => Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  decoration: BoxDecoration(
-                    color: AppColors.card,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: _selectedTheme == t ? AppColors.brightRed : AppColors.divider,
-                      width: _selectedTheme == t ? 1.5 : 1.0,
+            ..._themes.map(
+              (t) => Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.card,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: _selectedTheme == t
+                        ? AppColors.brightRed
+                        : AppColors.divider,
+                    width: _selectedTheme == t ? 1.5 : 1.0,
+                  ),
+                ),
+                child: ListTile(
+                  title: Text(
+                    t,
+                    style: TextStyle(
+                      color: _selectedTheme == t
+                          ? AppColors.brightRed
+                          : AppColors.primaryText,
+                      fontWeight: _selectedTheme == t
+                          ? FontWeight.bold
+                          : FontWeight.normal,
                     ),
                   ),
-                  child: ListTile(
-                    title: Text(
-                      t,
-                      style: TextStyle(
-                        color: _selectedTheme == t ? AppColors.brightRed : AppColors.primaryText,
-                        fontWeight: _selectedTheme == t ? FontWeight.bold : FontWeight.normal,
-                      ),
-                    ),
-                    trailing: _selectedTheme == t ? const Icon(Icons.check_circle, color: AppColors.brightRed) : null,
-                    onTap: () => setState(() => _selectedTheme = t),
-                  ),
-                )),
+                  trailing: _selectedTheme == t
+                      ? const Icon(
+                          Icons.check_circle,
+                          color: AppColors.brightRed,
+                        )
+                      : null,
+                  onTap: () => _selectTheme(t),
+                ),
+              ),
+            ),
           ],
         ),
       ),

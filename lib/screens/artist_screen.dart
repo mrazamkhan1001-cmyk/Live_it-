@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../services/audio_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/song_card.dart';
@@ -15,7 +16,8 @@ class ArtistScreen extends StatefulWidget {
   State<ArtistScreen> createState() => _ArtistScreenState();
 }
 
-class _ArtistScreenState extends State<ArtistScreen> with SingleTickerProviderStateMixin {
+class _ArtistScreenState extends State<ArtistScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   bool _isFollowing = false;
 
@@ -49,9 +51,14 @@ class _ArtistScreenState extends State<ArtistScreen> with SingleTickerProviderSt
                       width: double.infinity,
                       decoration: const BoxDecoration(
                         image: DecorationImage(
-                          image: NetworkImage('https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=1000'),
+                          image: NetworkImage(
+                            'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=1000',
+                          ),
                           fit: BoxFit.cover,
-                          colorFilter: ColorFilter.mode(Colors.black45, BlendMode.darken),
+                          colorFilter: ColorFilter.mode(
+                            Colors.black45,
+                            BlendMode.darken,
+                          ),
                         ),
                       ),
                     ),
@@ -67,9 +74,15 @@ class _ArtistScreenState extends State<ArtistScreen> with SingleTickerProviderSt
                     ),
                     SafeArea(
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
                         child: IconButton(
-                          icon: const Icon(Icons.arrow_back, color: AppColors.primaryText),
+                          icon: const Icon(
+                            Icons.arrow_back,
+                            color: AppColors.primaryText,
+                          ),
                           onPressed: () => Navigator.of(context).pop(),
                         ),
                       ),
@@ -92,7 +105,10 @@ class _ArtistScreenState extends State<ArtistScreen> with SingleTickerProviderSt
                           const SizedBox(height: 2),
                           const Text(
                             '25.4M monthly listeners',
-                            style: TextStyle(color: AppColors.secondaryText, fontSize: 13),
+                            style: TextStyle(
+                              color: AppColors.secondaryText,
+                              fontSize: 13,
+                            ),
                           ),
                           const SizedBox(height: 12),
 
@@ -104,17 +120,28 @@ class _ArtistScreenState extends State<ArtistScreen> with SingleTickerProviderSt
                               });
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: _isFollowing ? AppColors.card : AppColors.brightRed,
-                              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 10),
+                              backgroundColor: _isFollowing
+                                  ? AppColors.card
+                                  : AppColors.brightRed,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 28,
+                                vertical: 10,
+                              ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(20),
-                                side: BorderSide(color: _isFollowing ? AppColors.divider : AppColors.brightRed),
+                                side: BorderSide(
+                                  color: _isFollowing
+                                      ? AppColors.divider
+                                      : AppColors.brightRed,
+                                ),
                               ),
                             ),
                             child: Text(
                               _isFollowing ? 'Following' : 'Follow',
                               style: TextStyle(
-                                color: _isFollowing ? AppColors.primaryText : Colors.white,
+                                color: _isFollowing
+                                    ? AppColors.primaryText
+                                    : Colors.white,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -160,7 +187,9 @@ class _ArtistScreenState extends State<ArtistScreen> with SingleTickerProviderSt
                             onTap: () => audio.playSong(song, index: index),
                             onMoreTap: () {
                               Navigator.of(context).push(
-                                MaterialPageRoute(builder: (_) => SongDetailsScreen(song: song)),
+                                MaterialPageRoute(
+                                  builder: (_) => SongDetailsScreen(song: song),
+                                ),
                               );
                             },
                           );
@@ -168,14 +197,22 @@ class _ArtistScreenState extends State<ArtistScreen> with SingleTickerProviderSt
                       ),
 
                       // Albums Tab
-                      const Center(child: Text('No albums loaded', style: TextStyle(color: AppColors.secondaryText))),
+                      const Center(
+                        child: Text(
+                          'No albums loaded',
+                          style: TextStyle(color: AppColors.secondaryText),
+                        ),
+                      ),
 
                       // About Tab
                       const Padding(
                         padding: EdgeInsets.all(20.0),
                         child: Text(
                           'Imagine Dragons is an American pop rock band from Las Vegas, Nevada, consisting of lead singer Dan Reynolds, guitarist Wayne Sermon, bassist Ben McKee, and drummer Daniel Platzman.',
-                          style: TextStyle(color: AppColors.secondaryText, height: 1.5),
+                          style: TextStyle(
+                            color: AppColors.secondaryText,
+                            height: 1.5,
+                          ),
                         ),
                       ),
                     ],

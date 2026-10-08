@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../services/audio_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/song_card.dart';
@@ -40,9 +41,16 @@ class AlbumScreen extends StatelessWidget {
                     height: 200,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.brightRed, width: 1.5),
+                      border: Border.all(
+                        color: AppColors.brightRed,
+                        width: 1.5,
+                      ),
                       boxShadow: const [
-                        BoxShadow(color: AppColors.redGlow, blurRadius: 20, spreadRadius: 2),
+                        BoxShadow(
+                          color: AppColors.redGlow,
+                          blurRadius: 20,
+                          spreadRadius: 2,
+                        ),
                       ],
                     ),
                     child: ClipRRect(
@@ -68,7 +76,10 @@ class AlbumScreen extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     '$artistName • 2021 • ${audio.queue.length} songs',
-                    style: const TextStyle(color: AppColors.secondaryText, fontSize: 13),
+                    style: const TextStyle(
+                      color: AppColors.secondaryText,
+                      fontSize: 13,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 20),
@@ -80,14 +91,30 @@ class AlbumScreen extends StatelessWidget {
                       // Red Play Button
                       ElevatedButton.icon(
                         onPressed: () {
-                          if (audio.queue.isNotEmpty) audio.playSong(audio.queue.first);
+                          if (audio.queue.isNotEmpty) {
+                            audio.playSong(audio.queue.first);
+                          }
                         },
-                        icon: const Icon(Icons.play_arrow_rounded, color: Colors.white),
-                        label: const Text('Play', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        icon: const Icon(
+                          Icons.play_arrow_rounded,
+                          color: Colors.white,
+                        ),
+                        label: const Text(
+                          'Play',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.brightRed,
-                          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 28,
+                            vertical: 10,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 14),
@@ -97,13 +124,25 @@ class AlbumScreen extends StatelessWidget {
                         onPressed: () {
                           audio.toggleShuffle();
                         },
-                        icon: const Icon(Icons.shuffle, color: AppColors.primaryText, size: 18),
-                        label: const Text('Shuffle', style: TextStyle(color: AppColors.primaryText)),
+                        icon: const Icon(
+                          Icons.shuffle,
+                          color: AppColors.primaryText,
+                          size: 18,
+                        ),
+                        label: const Text(
+                          'Shuffle',
+                          style: TextStyle(color: AppColors.primaryText),
+                        ),
                         style: OutlinedButton.styleFrom(
                           backgroundColor: AppColors.card,
                           side: const BorderSide(color: AppColors.divider),
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 10,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
                         ),
                       ),
                     ],
@@ -126,7 +165,9 @@ class AlbumScreen extends StatelessWidget {
                         onTap: () => audio.playSong(song, index: index),
                         onMoreTap: () {
                           Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => SongDetailsScreen(song: song)),
+                            MaterialPageRoute(
+                              builder: (_) => SongDetailsScreen(song: song),
+                            ),
                           );
                         },
                         onFavoriteTap: () => audio.toggleFavorite(song),

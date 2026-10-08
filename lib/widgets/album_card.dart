@@ -1,21 +1,24 @@
 import 'package:flutter/material.dart';
+
 import '../models/album.dart';
 import '../theme/app_theme.dart';
 
+/// Phase 12 Polished AlbumCard Component
+/// Standard 140x140 size with rounded 12px corners, subtle border,
+/// restrained shadow, and clean typography.
 class AlbumCard extends StatelessWidget {
   final Album album;
   final VoidCallback onTap;
 
-  const AlbumCard({
-    super.key,
-    required this.album,
-    required this.onTap,
-  });
+  const AlbumCard({super.key, required this.album, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        LiveItHaptics.light();
+        onTap();
+      },
       child: Container(
         width: 140,
         margin: const EdgeInsets.only(right: 14),
@@ -26,13 +29,13 @@ class AlbumCard extends StatelessWidget {
               width: 140,
               height: 140,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppRadii.r12,
                 border: Border.all(color: AppColors.divider, width: 1),
-                boxShadow: [
+                boxShadow: const [
                   BoxShadow(
-                    color: AppColors.brightRed.withValues(alpha: 0.15),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+                    color: AppColors.redGlow,
+                    blurRadius: 8,
+                    offset: Offset(0, 3),
                   ),
                 ],
               ),
@@ -43,7 +46,11 @@ class AlbumCard extends StatelessWidget {
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => Container(
                     color: AppColors.card,
-                    child: const Icon(Icons.album, color: AppColors.brightRed, size: 48),
+                    child: const Icon(
+                      Icons.album,
+                      color: AppColors.brightRed,
+                      size: 48,
+                    ),
                   ),
                 ),
               ),
@@ -51,21 +58,14 @@ class AlbumCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               album.title,
-              style: const TextStyle(
-                color: AppColors.primaryText,
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
+              style: AppTypography.titleMedium,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 2),
             Text(
               '${album.artist} • ${album.year}',
-              style: const TextStyle(
-                color: AppColors.secondaryText,
-                fontSize: 12,
-              ),
+              style: AppTypography.bodySmall,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),

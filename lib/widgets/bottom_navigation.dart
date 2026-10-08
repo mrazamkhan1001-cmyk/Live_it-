@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+
 import '../theme/app_theme.dart';
 
+/// Phase 12 Polished CustomBottomNavigation
+/// Clean, restrained 90% black / 10% red navigation bar with subtle active state highlight and haptic feedback.
 class CustomBottomNavigation extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -16,13 +19,8 @@ class CustomBottomNavigation extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 6),
       decoration: const BoxDecoration(
-        color: Color(0xFF050505),
-        border: Border(
-          top: BorderSide(
-            color: Color(0xFF1E1E1E),
-            width: 1,
-          ),
-        ),
+        color: AppColors.surface,
+        border: Border(top: BorderSide(color: AppColors.divider, width: 1)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -41,7 +39,7 @@ class CustomBottomNavigation extends StatelessWidget {
           ),
           _buildNavItem(
             index: 2,
-            icon: Icons.music_note_rounded,
+            icon: Icons.music_note_outlined,
             activeIcon: Icons.music_note_rounded,
             label: 'Library',
           ),
@@ -65,8 +63,13 @@ class CustomBottomNavigation extends StatelessWidget {
     final isActive = currentIndex == index;
 
     return InkWell(
-      onTap: () => onTap(index),
-      borderRadius: BorderRadius.circular(12),
+      onTap: () {
+        if (!isActive) {
+          LiveItHaptics.selection();
+        }
+        onTap(index);
+      },
+      borderRadius: AppRadii.r12,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
         child: Column(
@@ -74,36 +77,34 @@ class CustomBottomNavigation extends StatelessWidget {
           children: [
             if (isActive)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 3,
+                ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF280006),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.brightRed, width: 1.2),
+                  color: const Color(0xFF1F0507),
+                  borderRadius: AppRadii.r8,
+                  border: Border.all(
+                    color: AppColors.brightRed.withValues(alpha: 0.6),
+                    width: 1.0,
+                  ),
                   boxShadow: const [
                     BoxShadow(
-                      color: Color(0x66FF1018),
-                      blurRadius: 8,
+                      color: AppColors.redGlow,
+                      blurRadius: 6,
                       spreadRadius: 0,
                     ),
                   ],
                 ),
-                child: Icon(
-                  activeIcon,
-                  color: AppColors.brightRed,
-                  size: 20,
-                ),
+                child: Icon(activeIcon, color: AppColors.brightRed, size: 20),
               )
             else
-              Icon(
-                icon,
-                color: const Color(0xFF8E8E93),
-                size: 22,
-              ),
+              Icon(icon, color: AppColors.secondaryText, size: 22),
             const SizedBox(height: 3),
             Text(
               label,
               style: TextStyle(
-                color: isActive ? AppColors.brightRed : const Color(0xFF8E8E93),
+                color: isActive ? AppColors.brightRed : AppColors.secondaryText,
                 fontSize: 11,
                 fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
               ),

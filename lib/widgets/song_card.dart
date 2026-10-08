@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+
 import '../models/song.dart';
 import '../theme/app_theme.dart';
 
+/// Phase 12 Polished SongTile Component
+/// Consistent 48x48 artwork, 8px radius, clean active playback indicators,
+/// typography hierarchy, and subtle interaction haptics.
 class SongTile extends StatelessWidget {
   final Song song;
   final bool isCurrent;
@@ -25,8 +29,11 @@ class SongTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      onTap: () {
+        LiveItHaptics.light();
+        onTap();
+      },
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
       leading: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -35,10 +42,12 @@ class SongTile extends StatelessWidget {
               width: 22,
               child: Text(
                 '$indexNumber',
-                style: const TextStyle(
-                  color: AppColors.primaryText,
+                style: TextStyle(
+                  color: isCurrent
+                      ? AppColors.brightRed
+                      : AppColors.primaryText,
                   fontWeight: FontWeight.bold,
-                  fontSize: 16,
+                  fontSize: 15,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -49,7 +58,7 @@ class SongTile extends StatelessWidget {
             alignment: Alignment.center,
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: AppRadii.r8,
                 child: Image.network(
                   song.artworkUrl,
                   width: 48,
@@ -59,7 +68,11 @@ class SongTile extends StatelessWidget {
                     width: 48,
                     height: 48,
                     color: AppColors.card,
-                    child: const Icon(Icons.music_note, color: AppColors.brightRed),
+                    child: const Icon(
+                      Icons.music_note,
+                      color: AppColors.brightRed,
+                      size: 22,
+                    ),
                   ),
                 ),
               ),
@@ -69,12 +82,12 @@ class SongTile extends StatelessWidget {
                   height: 48,
                   decoration: BoxDecoration(
                     color: Colors.black54,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: AppRadii.r8,
                   ),
                   child: Icon(
                     isPlaying ? Icons.equalizer : Icons.play_arrow,
                     color: AppColors.brightRed,
-                    size: 26,
+                    size: 24,
                   ),
                 ),
             ],
@@ -86,17 +99,14 @@ class SongTile extends StatelessWidget {
         style: TextStyle(
           color: isCurrent ? AppColors.brightRed : AppColors.primaryText,
           fontWeight: isCurrent ? FontWeight.bold : FontWeight.w600,
-          fontSize: 15,
+          fontSize: 14.5,
         ),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
       subtitle: Text(
         song.artist,
-        style: const TextStyle(
-          color: AppColors.secondaryText,
-          fontSize: 13,
-        ),
+        style: AppTypography.bodySmall,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
@@ -107,14 +117,26 @@ class SongTile extends StatelessWidget {
             IconButton(
               icon: Icon(
                 song.isFavorite ? Icons.favorite : Icons.favorite_border,
-                color: song.isFavorite ? AppColors.brightRed : AppColors.secondaryText,
+                color: song.isFavorite
+                    ? AppColors.brightRed
+                    : AppColors.secondaryText,
                 size: 20,
               ),
-              onPressed: onFavoriteTap,
+              onPressed: () {
+                LiveItHaptics.selection();
+                onFavoriteTap!();
+              },
             ),
           IconButton(
-            icon: const Icon(Icons.more_vert, color: AppColors.secondaryText, size: 20),
-            onPressed: onMoreTap,
+            icon: const Icon(
+              Icons.more_vert,
+              color: AppColors.secondaryText,
+              size: 20,
+            ),
+            onPressed: () {
+              LiveItHaptics.selection();
+              onMoreTap?.call();
+            },
           ),
         ],
       ),

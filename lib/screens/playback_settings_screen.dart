@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 
 /// Playback Settings Screen matching Section 22
@@ -16,6 +18,39 @@ class _PlaybackSettingsScreenState extends State<PlaybackSettingsScreen> {
   bool _normalizeVolume = true;
   bool _audioFocus = true;
   bool _resumePlayback = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final settings = await StorageService.getPlaybackSettings();
+    if (mounted) {
+      setState(() {
+        _crossfade = settings.crossfade;
+        _crossfadeDuration = settings.crossfadeDuration;
+        _gaplessPlayback = settings.gaplessPlayback;
+        _normalizeVolume = settings.normalizeVolume;
+        _audioFocus = settings.audioFocus;
+        _resumePlayback = settings.resumePlayback;
+      });
+    }
+  }
+
+  void _saveCurrentSettings() {
+    StorageService.savePlaybackSettings(
+      PlaybackSettings(
+        crossfade: _crossfade,
+        crossfadeDuration: _crossfadeDuration,
+        gaplessPlayback: _gaplessPlayback,
+        normalizeVolume: _normalizeVolume,
+        audioFocus: _audioFocus,
+        resumePlayback: _resumePlayback,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,16 +71,34 @@ class _PlaybackSettingsScreenState extends State<PlaybackSettingsScreen> {
               title: 'Crossfade',
               subtitle: 'Allows songs to transition seamlessly',
               value: _crossfade,
-              onChanged: (v) => setState(() => _crossfade = v),
+              onChanged: (v) {
+                setState(() => _crossfade = v);
+                _saveCurrentSettings();
+              },
             ),
             if (_crossfade) ...[
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Crossfade Duration', style: TextStyle(color: AppColors.secondaryText, fontSize: 13)),
-                    Text('${_crossfadeDuration.toInt()}s', style: const TextStyle(color: AppColors.brightRed, fontWeight: FontWeight.bold)),
+                    const Text(
+                      'Crossfade Duration',
+                      style: TextStyle(
+                        color: AppColors.secondaryText,
+                        fontSize: 13,
+                      ),
+                    ),
+                    Text(
+                      '${_crossfadeDuration.toInt()}s',
+                      style: const TextStyle(
+                        color: AppColors.brightRed,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -55,7 +108,10 @@ class _PlaybackSettingsScreenState extends State<PlaybackSettingsScreen> {
                 value: _crossfadeDuration,
                 activeColor: AppColors.brightRed,
                 inactiveColor: AppColors.divider,
-                onChanged: (v) => setState(() => _crossfadeDuration = v),
+                onChanged: (v) {
+                  setState(() => _crossfadeDuration = v);
+                  _saveCurrentSettings();
+                },
               ),
             ],
 
@@ -64,28 +120,40 @@ class _PlaybackSettingsScreenState extends State<PlaybackSettingsScreen> {
               title: 'Gapless Playback',
               subtitle: 'Eliminate silent gaps between songs',
               value: _gaplessPlayback,
-              onChanged: (v) => setState(() => _gaplessPlayback = v),
+              onChanged: (v) {
+                setState(() => _gaplessPlayback = v);
+                _saveCurrentSettings();
+              },
             ),
             const SizedBox(height: 12),
             _buildSwitchTile(
               title: 'Normalize Volume',
               subtitle: 'Set same audio level for all tracks',
               value: _normalizeVolume,
-              onChanged: (v) => setState(() => _normalizeVolume = v),
+              onChanged: (v) {
+                setState(() => _normalizeVolume = v);
+                _saveCurrentSettings();
+              },
             ),
             const SizedBox(height: 12),
             _buildSwitchTile(
               title: 'Audio Focus',
               subtitle: 'Pause when other apps play audio',
               value: _audioFocus,
-              onChanged: (v) => setState(() => _audioFocus = v),
+              onChanged: (v) {
+                setState(() => _audioFocus = v);
+                _saveCurrentSettings();
+              },
             ),
             const SizedBox(height: 12),
             _buildSwitchTile(
               title: 'Resume Playback',
               subtitle: 'Automatically resume when headphones connect',
               value: _resumePlayback,
-              onChanged: (v) => setState(() => _resumePlayback = v),
+              onChanged: (v) {
+                setState(() => _resumePlayback = v);
+                _saveCurrentSettings();
+              },
             ),
           ],
         ),
@@ -106,8 +174,18 @@ class _PlaybackSettingsScreenState extends State<PlaybackSettingsScreen> {
         border: Border.all(color: AppColors.divider, width: 1),
       ),
       child: SwitchListTile(
-        title: Text(title, style: const TextStyle(color: AppColors.primaryText, fontWeight: FontWeight.bold, fontSize: 14)),
-        subtitle: Text(subtitle, style: const TextStyle(color: AppColors.secondaryText, fontSize: 12)),
+        title: Text(
+          title,
+          style: const TextStyle(
+            color: AppColors.primaryText,
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+          ),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: const TextStyle(color: AppColors.secondaryText, fontSize: 12),
+        ),
         value: value,
         activeThumbColor: AppColors.brightRed,
         activeTrackColor: AppColors.darkRed,

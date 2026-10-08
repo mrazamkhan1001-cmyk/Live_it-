@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../services/audio_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/song_card.dart';
+import '../widgets/empty_state_view.dart';
 
-/// Recently Played Screen
+/// Phase 12 Polished Recently Played Screen
 class RecentlyPlayedScreen extends StatelessWidget {
   const RecentlyPlayedScreen({super.key});
 
@@ -34,34 +36,36 @@ class RecentlyPlayedScreen extends StatelessWidget {
           ),
           body: SafeArea(
             child: recentSongs.isEmpty
-                ? const Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.history_rounded, color: AppColors.brightRed, size: 60),
-                        SizedBox(height: 16),
-                        Text(
-                          'Nothing played yet',
-                          style: TextStyle(color: AppColors.primaryText, fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
-                        SizedBox(height: 6),
-                        Text(
-                          'Songs you play will appear here.',
-                          style: TextStyle(color: AppColors.secondaryText, fontSize: 13),
-                        ),
-                      ],
-                    ),
+                ? EmptyStateView(
+                    icon: Icons.history_rounded,
+                    title: 'Nothing Played Yet',
+                    description: 'Songs you stream and play will automatically appear in your listening history.',
+                    actionLabel: 'EXPLORE MUSIC',
+                    actionIcon: Icons.explore_outlined,
+                    onAction: () => Navigator.of(context).pop(),
                   )
                 : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     itemCount: recentSongs.length,
                     itemBuilder: (context, index) {
                       final song = recentSongs[index];
+                      final isCurrent = audio.currentSong?.id == song.id;
+
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 8),
                         child: SongTile(
                           song: song,
-                          onTap: () => audio.playSong(song, queueList: recentSongs, index: index),
+                          isCurrent: isCurrent,
+                          isPlaying: isCurrent && audio.isPlaying,
+                          onTap: () => audio.playSong(
+                            song,
+                            queueList: recentSongs,
+                            index: index,
+                          ),
+                          onFavoriteTap: () => audio.toggleFavorite(song),
                         ),
                       );
                     },

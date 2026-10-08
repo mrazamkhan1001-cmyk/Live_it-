@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../theme/app_theme.dart';
 import 'edit_profile_screen.dart';
 import 'playback_settings_screen.dart';
@@ -118,14 +119,27 @@ class SettingsScreen extends StatelessWidget {
           leading: Icon(icon, color: AppColors.brightRed, size: 22),
           title: Text(
             title,
-            style: const TextStyle(color: AppColors.primaryText, fontSize: 14, fontWeight: FontWeight.w600),
+            style: const TextStyle(
+              color: AppColors.primaryText,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-          subtitle: Text(subtitle, style: const TextStyle(color: AppColors.secondaryText, fontSize: 11)),
-          trailing: const Icon(Icons.arrow_forward_ios, color: AppColors.secondaryText, size: 14),
+          subtitle: Text(
+            subtitle,
+            style: const TextStyle(
+              color: AppColors.secondaryText,
+              fontSize: 11,
+            ),
+          ),
+          trailing: const Icon(
+            Icons.arrow_forward_ios,
+            color: AppColors.secondaryText,
+            size: 14,
+          ),
           onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => targetScreen),
-            );
+            Navigator.of(context)
+                .push(MaterialPageRoute(builder: (_) => targetScreen));
           },
         ),
       ),

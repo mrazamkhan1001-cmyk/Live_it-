@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 
 class EqualizerScreen extends StatefulWidget {
@@ -22,6 +24,45 @@ class _EqualizerScreenState extends State<EqualizerScreen> {
   bool _loudness = true;
 
   final List<String> _presets = ['Custom', 'Rock', 'Pop', 'Hip Hop'];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final settings = await StorageService.getEqualizerSettings();
+    if (mounted) {
+      setState(() {
+        _selectedPreset = settings.selectedPreset;
+        _band60 = settings.band60;
+        _band230 = settings.band230;
+        _band910 = settings.band910;
+        _band3k6 = settings.band3k6;
+        _band14k = settings.band14k;
+        _bassBoost = settings.bassBoost;
+        _virtualizer = settings.virtualizer;
+        _loudness = settings.loudness;
+      });
+    }
+  }
+
+  void _saveSettings() {
+    StorageService.saveEqualizerSettings(
+      EqualizerSettings(
+        selectedPreset: _selectedPreset,
+        band60: _band60,
+        band230: _band230,
+        band910: _band910,
+        band3k6: _band3k6,
+        band14k: _band14k,
+        bassBoost: _bassBoost,
+        virtualizer: _virtualizer,
+        loudness: _loudness,
+      ),
+    );
+  }
 
   void _applyPreset(String preset) {
     setState(() {
@@ -56,6 +97,7 @@ class _EqualizerScreenState extends State<EqualizerScreen> {
           _band14k = 4.0;
       }
     });
+    _saveSettings();
   }
 
   @override
@@ -85,19 +127,30 @@ class _EqualizerScreenState extends State<EqualizerScreen> {
                       onTap: () => _applyPreset(preset),
                       child: Container(
                         margin: const EdgeInsets.only(right: 10),
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
-                          color: isSelected ? AppColors.brightRed : AppColors.card,
+                          color: isSelected
+                              ? AppColors.brightRed
+                              : AppColors.card,
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: isSelected ? AppColors.brightRed : AppColors.divider,
+                            color: isSelected
+                                ? AppColors.brightRed
+                                : AppColors.divider,
                           ),
                         ),
                         child: Text(
                           preset,
                           style: TextStyle(
-                            color: isSelected ? Colors.white : AppColors.primaryText,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                            color: isSelected
+                                ? Colors.white
+                                : AppColors.primaryText,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.w500,
                             fontSize: 13,
                           ),
                         ),
@@ -111,7 +164,10 @@ class _EqualizerScreenState extends State<EqualizerScreen> {
               // 5 Red Vertical Frequency Pillars (60, 230, 910, 3.6K, 14K) matching Mockup #12
               Container(
                 height: 240,
-                padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 10),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 20,
+                  horizontal: 10,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.card,
                   borderRadius: BorderRadius.circular(16),
@@ -120,22 +176,46 @@ class _EqualizerScreenState extends State<EqualizerScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    _buildPillarSlider('60', _band60, (v) => setState(() => _band60 = v)),
-                    _buildPillarSlider('230', _band230, (v) => setState(() => _band230 = v)),
-                    _buildPillarSlider('910', _band910, (v) => setState(() => _band910 = v)),
-                    _buildPillarSlider('3.6K', _band3k6, (v) => setState(() => _band3k6 = v)),
-                    _buildPillarSlider('14K', _band14k, (v) => setState(() => _band14k = v)),
+                    _buildPillarSlider('60', _band60, (v) {
+                      setState(() => _band60 = v);
+                      _saveSettings();
+                    }),
+                    _buildPillarSlider('230', _band230, (v) {
+                      setState(() => _band230 = v);
+                      _saveSettings();
+                    }),
+                    _buildPillarSlider('910', _band910, (v) {
+                      setState(() => _band910 = v);
+                      _saveSettings();
+                    }),
+                    _buildPillarSlider('3.6K', _band3k6, (v) {
+                      setState(() => _band3k6 = v);
+                      _saveSettings();
+                    }),
+                    _buildPillarSlider('14K', _band14k, (v) {
+                      setState(() => _band14k = v);
+                      _saveSettings();
+                    }),
                   ],
                 ),
               ),
               const SizedBox(height: 32),
 
               // Toggle Switches (Bass Boost, Virtualizer, Loudness) matching Mockup #12
-              _buildSwitchRow('Bass Boost', _bassBoost, (v) => setState(() => _bassBoost = v)),
+              _buildSwitchRow('Bass Boost', _bassBoost, (v) {
+                setState(() => _bassBoost = v);
+                _saveSettings();
+              }),
               const SizedBox(height: 12),
-              _buildSwitchRow('Virtualizer', _virtualizer, (v) => setState(() => _virtualizer = v)),
+              _buildSwitchRow('Virtualizer', _virtualizer, (v) {
+                setState(() => _virtualizer = v);
+                _saveSettings();
+              }),
               const SizedBox(height: 12),
-              _buildSwitchRow('Loudness', _loudness, (v) => setState(() => _loudness = v)),
+              _buildSwitchRow('Loudness', _loudness, (v) {
+                setState(() => _loudness = v);
+                _saveSettings();
+              }),
             ],
           ),
         ),
@@ -143,7 +223,11 @@ class _EqualizerScreenState extends State<EqualizerScreen> {
     );
   }
 
-  Widget _buildPillarSlider(String label, double value, ValueChanged<double> onChanged) {
+  Widget _buildPillarSlider(
+    String label,
+    double value,
+    ValueChanged<double> onChanged,
+  ) {
     return Column(
       children: [
         Expanded(
@@ -168,13 +252,21 @@ class _EqualizerScreenState extends State<EqualizerScreen> {
         const SizedBox(height: 12),
         Text(
           label,
-          style: const TextStyle(color: AppColors.secondaryText, fontSize: 12, fontWeight: FontWeight.bold),
+          style: const TextStyle(
+            color: AppColors.secondaryText,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildSwitchRow(String title, bool value, ValueChanged<bool> onChanged) {
+  Widget _buildSwitchRow(
+    String title,
+    bool value,
+    ValueChanged<bool> onChanged,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
       decoration: BoxDecoration(

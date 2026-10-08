@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../services/audio_service.dart';
+import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 
 /// Edit Profile Screen matching Section 20 & Mockup #9
@@ -21,14 +23,45 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.initState();
     final audio = Provider.of<AudioPlayerService>(context, listen: false);
     _nameController = TextEditingController(text: audio.rawUserName);
-    _usernameController = TextEditingController(text: '${audio.rawUserName.toLowerCase()}_uchiha');
-    _bioController = TextEditingController(text: 'Music for the ones who understand...');
+    _usernameController = TextEditingController(
+      text: '${audio.rawUserName.toLowerCase().replaceAll(' ', '_')}_uchiha',
+    );
+    _bioController = TextEditingController(
+      text: 'Music for the ones who understand...',
+    );
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final profile = await StorageService.getUserProfile();
+    if (mounted) {
+      setState(() {
+        _nameController.text = profile.name;
+        _usernameController.text = profile.username;
+        _bioController.text = profile.bio;
+      });
+    }
   }
 
   void _saveProfile() async {
     final name = _nameController.text.trim();
+    final username = _usernameController.text.trim();
+    final bio = _bioController.text.trim();
+
     if (name.isNotEmpty) {
-      await Provider.of<AudioPlayerService>(context, listen: false).setUserName(name);
+      await StorageService.saveUserProfile(
+        UserProfile(
+          name: name,
+          username: username.isEmpty ? 'azam_uchiha' : username,
+          bio: bio.isEmpty ? 'Music for the ones who understand...' : bio,
+        ),
+      );
+      if (mounted) {
+        await Provider.of<AudioPlayerService>(
+          context,
+          listen: false,
+        ).setUserName(name);
+      }
     }
     if (mounted) {
       Navigator.of(context).pop();
@@ -48,7 +81,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         actions: [
           TextButton(
             onPressed: _saveProfile,
-            child: const Text('Save', style: TextStyle(color: AppColors.brightRed, fontWeight: FontWeight.bold, fontSize: 16)),
+            child: const Text(
+              'Save',
+              style: TextStyle(
+                color: AppColors.brightRed,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
           ),
         ],
       ),
@@ -66,7 +106,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       height: 110,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.brightRed, width: 3),
+                        border: Border.all(
+                          color: AppColors.brightRed,
+                          width: 3,
+                        ),
                       ),
                       child: ClipOval(
                         child: Image.network(
@@ -84,7 +127,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           color: AppColors.brightRed,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.camera_alt, color: Colors.white, size: 18),
+                        child: const Icon(
+                          Icons.camera_alt,
+                          color: Colors.white,
+                          size: 18,
+                        ),
                       ),
                     ),
                   ],
@@ -93,10 +140,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               const SizedBox(height: 32),
 
               // Full Name Input
-              _buildEditTile(
-                label: 'Name',
-                controller: _nameController,
-              ),
+              _buildEditTile(label: 'Name', controller: _nameController),
               const SizedBox(height: 16),
 
               // Username Input
@@ -127,7 +171,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: AppColors.secondaryText, fontSize: 12, fontWeight: FontWeight.bold)),
+        Text(
+          label,
+          style: const TextStyle(
+            color: AppColors.secondaryText,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         const SizedBox(height: 6),
         TextField(
           controller: controller,
@@ -136,14 +187,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           decoration: InputDecoration(
             filled: true,
             fillColor: AppColors.card,
-            contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 14,
+              horizontal: 16,
+            ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: AppColors.divider, width: 1),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.brightRed, width: 1.5),
+              borderSide: const BorderSide(
+                color: AppColors.brightRed,
+                width: 1.5,
+              ),
             ),
           ),
         ),

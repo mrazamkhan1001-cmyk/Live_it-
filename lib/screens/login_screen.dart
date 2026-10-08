@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../services/audio_service.dart';
 import '../theme/app_theme.dart';
-import 'home_screen.dart';
+import 'main_shell_screen.dart';
 import 'signup_screen.dart';
 
 /// Rebuilt Login Screen matching target screenshot media_1791330347266.png 1:1
@@ -29,11 +30,14 @@ class _LoginScreenState extends State<LoginScreen> {
   void _onLogin() async {
     final name = _emailController.text.trim();
     if (name.isNotEmpty) {
-      await Provider.of<AudioPlayerService>(context, listen: false).setUserName(name);
+      await Provider.of<AudioPlayerService>(
+        context,
+        listen: false,
+      ).setUserName(name);
     }
     if (mounted) {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        MaterialPageRoute(builder: (_) => const MainShellScreen()),
       );
     }
   }
@@ -97,7 +101,10 @@ class _LoginScreenState extends State<LoginScreen> {
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 8,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
@@ -105,10 +112,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     SizedBox(height: screenHeight * 0.225),
 
                     // LIVE IT Branding Title with Brush Style Accent
-                    Row(
+                    const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       mainAxisSize: MainAxisSize.min,
-                      children: const [
+                      children: [
                         Text(
                           'LIVE ',
                           style: TextStyle(
@@ -176,21 +183,41 @@ class _LoginScreenState extends State<LoginScreen> {
                       height: 42,
                       child: TextField(
                         controller: _emailController,
-                        style: const TextStyle(color: AppColors.primaryText, fontSize: 13),
+                        style: const TextStyle(
+                          color: AppColors.primaryText,
+                          fontSize: 13,
+                        ),
                         decoration: InputDecoration(
                           hintText: 'Email',
-                          hintStyle: const TextStyle(color: AppColors.secondaryText, fontSize: 13),
-                          prefixIcon: const Icon(Icons.email_outlined, color: AppColors.secondaryText, size: 18),
+                          hintStyle: const TextStyle(
+                            color: AppColors.secondaryText,
+                            fontSize: 13,
+                          ),
+                          prefixIcon: const Icon(
+                            Icons.email_outlined,
+                            color: AppColors.secondaryText,
+                            size: 18,
+                          ),
                           filled: true,
-                          fillColor: const Color(0xFF121212).withValues(alpha: 0.90),
-                          contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+                          fillColor: const Color(0xFF121212)
+                              .withValues(alpha: 0.90),
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 10,
+                            horizontal: 14,
+                          ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.12), width: 1),
+                            borderSide: BorderSide(
+                              color: Colors.white.withValues(alpha: 0.12),
+                              width: 1,
+                            ),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: AppColors.brightRed, width: 1.5),
+                            borderSide: const BorderSide(
+                              color: AppColors.brightRed,
+                              width: 1.5,
+                            ),
                           ),
                         ),
                       ),
@@ -203,14 +230,26 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: TextField(
                         controller: _passwordController,
                         obscureText: _obscurePassword,
-                        style: const TextStyle(color: AppColors.primaryText, fontSize: 13),
+                        style: const TextStyle(
+                          color: AppColors.primaryText,
+                          fontSize: 13,
+                        ),
                         decoration: InputDecoration(
                           hintText: 'Password',
-                          hintStyle: const TextStyle(color: AppColors.secondaryText, fontSize: 13),
-                          prefixIcon: const Icon(Icons.lock_outline, color: AppColors.secondaryText, size: 18),
+                          hintStyle: const TextStyle(
+                            color: AppColors.secondaryText,
+                            fontSize: 13,
+                          ),
+                          prefixIcon: const Icon(
+                            Icons.lock_outline,
+                            color: AppColors.secondaryText,
+                            size: 18,
+                          ),
                           suffixIcon: IconButton(
                             icon: Icon(
-                              _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                              _obscurePassword
+                                  ? Icons.visibility_off_outlined
+                                  : Icons.visibility_outlined,
                               color: AppColors.secondaryText,
                               size: 18,
                             ),
@@ -221,15 +260,25 @@ class _LoginScreenState extends State<LoginScreen> {
                             },
                           ),
                           filled: true,
-                          fillColor: const Color(0xFF121212).withValues(alpha: 0.90),
-                          contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+                          fillColor: const Color(0xFF121212)
+                              .withValues(alpha: 0.90),
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 10,
+                            horizontal: 14,
+                          ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.12), width: 1),
+                            borderSide: BorderSide(
+                              color: Colors.white.withValues(alpha: 0.12),
+                              width: 1,
+                            ),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: AppColors.brightRed, width: 1.5),
+                            borderSide: const BorderSide(
+                              color: AppColors.brightRed,
+                              width: 1.5,
+                            ),
                           ),
                         ),
                       ),
@@ -248,7 +297,9 @@ class _LoginScreenState extends State<LoginScreen> {
                               child: Checkbox(
                                 value: _rememberMe,
                                 activeColor: AppColors.brightRed,
-                                side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+                                side: BorderSide(
+                                  color: Colors.white.withValues(alpha: 0.2),
+                                ),
                                 onChanged: (val) {
                                   setState(() {
                                     _rememberMe = val ?? true;
@@ -259,7 +310,10 @@ class _LoginScreenState extends State<LoginScreen> {
                             const SizedBox(width: 6),
                             const Text(
                               'Remember me',
-                              style: TextStyle(color: AppColors.secondaryText, fontSize: 11),
+                              style: TextStyle(
+                                color: AppColors.secondaryText,
+                                fontSize: 11,
+                              ),
                             ),
                           ],
                         ),
@@ -369,7 +423,11 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: _buildSocialButton(
-                            child: const Icon(Icons.apple, color: Colors.white, size: 20),
+                            child: const Icon(
+                              Icons.apple,
+                              color: Colors.white,
+                              size: 20,
+                            ),
                             onTap: _onLogin,
                           ),
                         ),
@@ -425,13 +483,19 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildSocialButton({required Widget child, required VoidCallback onTap}) {
+  Widget _buildSocialButton({
+    required Widget child,
+    required VoidCallback onTap,
+  }) {
     return Container(
       height: 42,
       decoration: BoxDecoration(
         color: const Color(0xFF121212).withValues(alpha: 0.90),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.12), width: 1),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.12),
+          width: 1,
+        ),
       ),
       child: Material(
         color: Colors.transparent,
@@ -456,9 +520,7 @@ class _GoogleLogoIcon extends StatelessWidget {
     return SizedBox(
       width: size,
       height: size,
-      child: CustomPaint(
-        painter: _GoogleLogoPainter(),
-      ),
+      child: CustomPaint(painter: _GoogleLogoPainter()),
     );
   }
 }
@@ -471,7 +533,10 @@ class _GoogleLogoPainter extends CustomPainter {
     final double radius = size.width / 2;
     final double strokeWidth = size.width * 0.22;
 
-    final rect = Rect.fromCircle(center: Offset(cx, cy), radius: radius - strokeWidth / 2);
+    final rect = Rect.fromCircle(
+      center: Offset(cx, cy),
+      radius: radius - strokeWidth / 2,
+    );
 
     final redPaint = Paint()
       ..color = const Color(0xFFEA4335)
@@ -501,7 +566,12 @@ class _GoogleLogoPainter extends CustomPainter {
       ..color = const Color(0xFF4285F4)
       ..style = PaintingStyle.fill;
     canvas.drawRect(
-      Rect.fromLTWH(cx - strokeWidth * 0.1, cy - strokeWidth / 2, radius * 0.9, strokeWidth),
+      Rect.fromLTWH(
+        cx - strokeWidth * 0.1,
+        cy - strokeWidth / 2,
+        radius * 0.9,
+        strokeWidth,
+      ),
       barPaint,
     );
   }
@@ -520,9 +590,7 @@ class _DiscordLogoIcon extends StatelessWidget {
     return SizedBox(
       width: size,
       height: size,
-      child: CustomPaint(
-        painter: _DiscordLogoPainter(),
-      ),
+      child: CustomPaint(painter: _DiscordLogoPainter()),
     );
   }
 }
@@ -552,11 +620,19 @@ class _DiscordLogoPainter extends CustomPainter {
       ..style = PaintingStyle.fill;
 
     canvas.drawOval(
-      Rect.fromCenter(center: Offset(w * 0.36, h * 0.52), width: w * 0.18, height: h * 0.22),
+      Rect.fromCenter(
+        center: Offset(w * 0.36, h * 0.52),
+        width: w * 0.18,
+        height: h * 0.22,
+      ),
       eyePaint,
     );
     canvas.drawOval(
-      Rect.fromCenter(center: Offset(w * 0.64, h * 0.52), width: w * 0.18, height: h * 0.22),
+      Rect.fromCenter(
+        center: Offset(w * 0.64, h * 0.52),
+        width: w * 0.18,
+        height: h * 0.22,
+      ),
       eyePaint,
     );
   }
