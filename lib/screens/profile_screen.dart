@@ -4,8 +4,9 @@ import 'package:provider/provider.dart';
 import '../services/audio_service.dart';
 import '../theme/app_theme.dart';
 import 'edit_profile_screen.dart';
-import 'theme_settings_screen.dart';
+import 'login_screen.dart';
 import 'settings_screen.dart';
+import 'theme_settings_screen.dart';
 
 /// Redesigned Profile Screen with Full-Screen Cinematic Background and Sasuke Avatar
 class ProfileScreen extends StatefulWidget {
@@ -18,6 +19,115 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  bool _isLoggingOut = false;
+
+  Future<void> _showLogoutDialog(BuildContext context) async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF161616),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(
+              color: AppColors.brightRed.withValues(alpha: 0.35),
+              width: 1,
+            ),
+          ),
+          title: const Text(
+            'Log out?',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: const Text(
+            'Are you sure you want to log out of your account?',
+            style: TextStyle(
+              color: AppColors.secondaryText,
+              fontSize: 14,
+            ),
+          ),
+          actionsPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(
+                  color: AppColors.secondaryText,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.brightRed,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                elevation: 0,
+              ),
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text(
+                'Logout',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm == true && mounted) {
+      await _performLogout();
+    }
+  }
+
+  Future<void> _performLogout() async {
+    if (_isLoggingOut) return;
+    setState(() {
+      _isLoggingOut = true;
+    });
+
+    try {
+      final audioService =
+          Provider.of<AudioPlayerService>(context, listen: false);
+      await audioService.logout();
+
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Logout failed: $e'),
+            backgroundColor: AppColors.brightRed,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoggingOut = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<AudioPlayerService>(
@@ -26,11 +136,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           backgroundColor: Colors.black,
           body: Stack(
             children: [
-              // 1. FULL-SCREEN BACKGROUND ARTWORK (Itachi + Red Moon + Crows)
+              // 1. FULL-SCREEN BACKGROUND ARTWORK (Red Moon + Silhouette + Ravens)
               Positioned.fill(
                 child: Image.asset(
-                  'assets/images/itachi_face_bg.png',
+                  'assets/images/profile_background.png',
                   fit: BoxFit.cover,
+                  alignment: Alignment.topCenter,
                   filterQuality: FilterQuality.high,
                 ),
               ),
@@ -139,20 +250,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             const SizedBox(height: 12),
 
                             // 5. USER NAME (Azam Khan) + RED VERIFICATION BADGE
-                            const Row(
+                            Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(
-                                  'Azam Khan',
-                                  style: TextStyle(
+                                  audio.rawUserName.isNotEmpty
+                                      ? audio.rawUserName
+                                      : 'Azam Khan',
+                                  style: const TextStyle(
                                     color: AppColors.primaryText,
                                     fontSize: 22,
                                     fontWeight: FontWeight.bold,
                                     letterSpacing: 0.3,
                                   ),
                                 ),
-                                SizedBox(width: 6),
-                                Icon(
+                                const SizedBox(width: 6),
+                                const Icon(
                                   Icons.check_circle_rounded,
                                   color: AppColors.brightRed,
                                   size: 20,
@@ -272,6 +385,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       );
                                     },
                                   ),
+                                  const SizedBox(height: 10),
+
+                                  // LOGOUT BUTTON
+                                  _buildMenuCard(
+                                    context: context,
+                                    icon: Icons.logout_rounded,
+                                    iconColor: AppColors.brightRed,
+                                    title: 'Logout',
+                                    titleColor: AppColors.brightRed,
+                                    borderColor: AppColors.brightRed
+                                        .withValues(alpha: 0.35),
+                                    trailing: _isLoggingOut
+                                        ? const SizedBox(
+                                            width: 18,
+                                            height: 18,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              valueColor:
+                                                  AlwaysStoppedAnimation<Color>(
+                                                AppColors.brightRed,
+                                              ),
+                                            ),
+                                          )
+                                        : const Icon(
+                                            Icons.chevron_right_rounded,
+                                            color: AppColors.brightRed,
+                                            size: 22,
+                                          ),
+                                    onTap: _isLoggingOut
+                                        ? () {}
+                                        : () => _showLogoutDialog(context),
+                                  ),
                                 ],
                               ),
                             ),
@@ -336,12 +481,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required String title,
     required Widget trailing,
     required VoidCallback onTap,
+    Color iconColor = Colors.white,
+    Color titleColor = AppColors.primaryText,
+    Color borderColor = Colors.white12,
   }) {
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF151515).withValues(alpha: 0.75),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white12, width: 1),
+        border: Border.all(color: borderColor, width: 1),
       ),
       child: Material(
         color: Colors.transparent,
@@ -353,13 +501,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
               children: [
-                Icon(icon, color: Colors.white, size: 22),
+                Icon(icon, color: iconColor, size: 22),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Text(
                     title,
-                    style: const TextStyle(
-                      color: AppColors.primaryText,
+                    style: TextStyle(
+                      color: titleColor,
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                     ),

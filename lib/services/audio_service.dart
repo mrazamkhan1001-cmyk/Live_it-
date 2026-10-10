@@ -263,6 +263,21 @@ class AudioPlayerService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Securely sign out: stops active playback, resets active queue & current track,
+  /// resets user session state, and notifies listeners without destroying shared services.
+  Future<void> logout() async {
+    try {
+      await _player.stop();
+    } catch (_) {}
+    _playbackState = PlaybackState.idle;
+    _position = Duration.zero;
+    _currentSong = null;
+    _queue = [];
+    _currentIndex = 0;
+    _userName = 'Azam Khan';
+    notifyListeners();
+  }
+
   // --- PLAYBACK ENGINE ACTIONS ---
 
   /// Play selected song with optional queue replacement and target index

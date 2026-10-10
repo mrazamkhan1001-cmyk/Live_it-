@@ -37,8 +37,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
               // 1. EXPANDED TOP ITACHI ARTWORK HEADER BACKGROUND (Reveals Itachi's face, red moon & anime atmosphere)
               Positioned(
                 top: 0,
-                left: 0,
-                right: 0,
+                left: 0,                right: 0,
                 height: 440,
                 child: ShaderMask(
                   shaderCallback: (rect) {

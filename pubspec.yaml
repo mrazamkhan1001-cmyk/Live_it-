@@ -29,3 +29,8 @@ flutter:
   assets:
     - assets/video/sharingan_android.mp4
     - assets/images/
+    - assets/images/live_it_logo.png
+    - assets/images/live_it_loading.png
+    - assets/images/login_background.png
+    - assets/images/signup_background.png
+    - assets/images/profile_background.png

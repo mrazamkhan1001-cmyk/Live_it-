@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:liveitbyazam/main.dart';
 import 'package:liveitbyazam/screens/loading_screen.dart';
+import 'package:liveitbyazam/screens/login_screen.dart';
+import 'package:liveitbyazam/screens/signup_screen.dart';
 import 'package:liveitbyazam/screens/main_shell_screen.dart';
 import 'package:liveitbyazam/screens/home_screen.dart';
 import 'package:liveitbyazam/screens/search_screen.dart';
@@ -13,15 +15,18 @@ import 'package:liveitbyazam/models/song.dart';
 import 'package:liveitbyazam/screens/downloads_screen.dart';
 import 'package:liveitbyazam/screens/fullscreen_player_screen.dart';
 import 'package:liveitbyazam/screens/player_screen.dart';
+import 'package:liveitbyazam/screens/settings_screen.dart';
 import 'package:liveitbyazam/services/audio_service.dart';
+import 'package:liveitbyazam/services/storage_service.dart';
 import 'package:liveitbyazam/theme/app_theme.dart';
 import 'package:liveitbyazam/widgets/sharingan_player.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUp(() {
+  setUp(() async {
     SharedPreferences.setMockInitialValues({});
+    await StorageService.init();
   });
 
   testWidgets('Startup Flow - App launches with LoadingScreen', (
@@ -612,4 +617,299 @@ void main() {
       expect(find.text('EXPLORE MUSIC'), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'LoginScreen - renders login_background.png, LIVE IT branding, inputs, and actions',
+    (WidgetTester tester) async {
+      final audioService = AudioPlayerService();
+      await tester.pumpWidget(
+        ChangeNotifierProvider<AudioPlayerService>.value(
+          value: audioService,
+          child: MaterialApp(
+            theme: AppTheme.darkTheme,
+            home: const LoginScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Verify background image asset
+      final imageFinder = find.byWidgetPredicate(
+        (widget) =>
+            widget is Image &&
+            widget.image is AssetImage &&
+            (widget.image as AssetImage).assetName ==
+                'assets/images/login_background.png' &&
+            widget.fit == BoxFit.cover,
+      );
+      expect(imageFinder, findsOneWidget);
+
+      // Verify official LIVE IT logo image asset in upper-left
+      final logoFinder = find.byWidgetPredicate(
+        (widget) =>
+            widget is Image &&
+            widget.image is AssetImage &&
+            (widget.image as AssetImage).assetName ==
+                'assets/images/live_it_logo.png' &&
+            widget.width == 100 &&
+            widget.fit == BoxFit.contain,
+      );
+      expect(logoFinder, findsOneWidget);
+
+      // Verify plain-text LIVE IT branding is absent from LoginScreen
+      expect(find.text('LIVE IT'), findsNothing);
+      expect(find.text('BY AZAM KHAN'), findsNothing);
+
+      // Verify welcome texts
+      expect(find.text('Welcome Back'), findsOneWidget);
+      expect(
+        find.text('Music for the ones who understand...'),
+        findsOneWidget,
+      );
+
+      // Verify Email and Password fields
+      expect(find.byType(TextField), findsNWidgets(2));
+      await tester.enterText(find.byType(TextField).first, 'test@example.com');
+      await tester.enterText(find.byType(TextField).last, 'secret123');
+      await tester.pump();
+
+      expect(find.text('test@example.com'), findsOneWidget);
+
+      // Verify Remember Me checkbox toggle
+      final checkboxFinder = find.byType(Checkbox);
+      expect(checkboxFinder, findsOneWidget);
+      await tester.tap(checkboxFinder);
+      await tester.pump();
+
+      // Verify Login button exists
+      final loginBtnFinder = find.byType(ElevatedButton);
+      expect(loginBtnFinder, findsOneWidget);
+
+      // Verify Apple and Discord icons are absent
+      expect(find.byIcon(Icons.apple), findsNothing);
+
+      // Verify Google icon and Continue with Google button exist
+      expect(
+        find.byWidgetPredicate(
+          (w) => w.runtimeType.toString() == '_GoogleLogoIcon',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Continue with Google'), findsOneWidget);
+    },
+  );
+
+  testWidgets('LoginScreen - Sign Up navigation navigates to SignupScreen', (
+    WidgetTester tester,
+  ) async {
+    final audioService = AudioPlayerService();
+    await tester.pumpWidget(
+      ChangeNotifierProvider<AudioPlayerService>.value(
+        value: audioService,
+        child: MaterialApp(
+          theme: AppTheme.darkTheme,
+          home: const LoginScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final signUpFinder = find.text('Sign Up');
+    expect(signUpFinder, findsOneWidget);
+    await tester.tap(signUpFinder);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(SignupScreen), findsOneWidget);
+  });
+
+  testWidgets(
+    'SignupScreen - renders signup_background.png, fields, and white Google button',
+    (WidgetTester tester) async {
+      final audioService = AudioPlayerService();
+      await tester.pumpWidget(
+        ChangeNotifierProvider<AudioPlayerService>.value(
+          value: audioService,
+          child: MaterialApp(
+            theme: AppTheme.darkTheme,
+            home: const SignupScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Verify signup background image asset
+      final imageFinder = find.byWidgetPredicate(
+        (widget) =>
+            widget is Image &&
+            widget.image is AssetImage &&
+            (widget.image as AssetImage).assetName ==
+                'assets/images/signup_background.png' &&
+            widget.fit == BoxFit.cover,
+      );
+      expect(imageFinder, findsOneWidget);
+
+      // Verify official LIVE IT logo image asset in upper-left
+      final logoFinder = find.byWidgetPredicate(
+        (widget) =>
+            widget is Image &&
+            widget.image is AssetImage &&
+            (widget.image as AssetImage).assetName ==
+                'assets/images/live_it_logo.png' &&
+            widget.width == 100 &&
+            widget.fit == BoxFit.contain,
+      );
+      expect(logoFinder, findsOneWidget);
+
+      // Verify title and subtitle
+      expect(find.text('Create Account'), findsNWidgets(2)); // Title + Button text
+      expect(
+        find.text('Join the community of music lovers.'),
+        findsOneWidget,
+      );
+
+      // Verify 5 input fields (Full Name, Email, Username, Password, Confirm Password)
+      expect(find.byType(TextField), findsNWidgets(5));
+
+      // Verify Apple and Discord buttons are absent
+      expect(find.byIcon(Icons.apple), findsNothing);
+
+      // Verify Google icon and white Continue with Google button exist
+      expect(
+        find.byWidgetPredicate(
+          (w) => w.runtimeType.toString() == '_GoogleLogoIcon',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Continue with Google'), findsOneWidget);
+
+      // Verify back navigation to Login
+      final backButtonFinder = find.byIcon(Icons.arrow_back);
+      expect(backButtonFinder, findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'ProfileScreen - renders Logout button and handles Cancel in confirmation dialog',
+    (WidgetTester tester) async {
+      final audioService = AudioPlayerService();
+      await tester.pumpWidget(
+        ChangeNotifierProvider<AudioPlayerService>.value(
+          value: audioService,
+          child: MaterialApp(
+            theme: AppTheme.darkTheme,
+            home: const ProfileScreen(),
+          ),
+        ),
+      );
+      // Verify Profile background image asset
+      final bgFinder = find.byWidgetPredicate(
+        (widget) =>
+            widget is Image &&
+            widget.image is AssetImage &&
+            (widget.image as AssetImage).assetName ==
+                'assets/images/profile_background.png' &&
+            widget.fit == BoxFit.cover,
+      );
+      expect(bgFinder, findsOneWidget);
+
+      final logoutFinder = find.text('Logout');
+      expect(logoutFinder, findsOneWidget);
+      await tester.ensureVisible(logoutFinder);
+      await tester.pumpAndSettle();
+
+      // Tap Logout to open confirmation dialog
+      await tester.tap(logoutFinder);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Log out?'), findsOneWidget);
+      expect(
+        find.text('Are you sure you want to log out of your account?'),
+        findsOneWidget,
+      );
+      expect(find.text('Cancel'), findsOneWidget);
+
+      // Tap Cancel to dismiss dialog
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Log out?'), findsNothing);
+      expect(find.byType(ProfileScreen), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'ProfileScreen - Logout confirmation triggers sign-out and navigates to LoginScreen',
+    (WidgetTester tester) async {
+      final audioService = AudioPlayerService();
+      await tester.pumpWidget(
+        ChangeNotifierProvider<AudioPlayerService>.value(
+          value: audioService,
+          child: MaterialApp(
+            theme: AppTheme.darkTheme,
+            home: const ProfileScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final logoutFinder = find.text('Logout');
+      await tester.ensureVisible(logoutFinder);
+      await tester.pumpAndSettle();
+
+      // Open dialog and confirm logout
+      await tester.tap(logoutFinder);
+      await tester.pumpAndSettle();
+
+      final confirmBtn = find.widgetWithText(ElevatedButton, 'Logout');
+      expect(confirmBtn, findsOneWidget);
+      await tester.tap(confirmBtn);
+      await tester.pumpAndSettle();
+
+      // Verify navigation to LoginScreen
+      expect(find.byType(LoginScreen), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'SettingsScreen - renders Logout button and opens confirmation dialog',
+    (WidgetTester tester) async {
+      final audioService = AudioPlayerService();
+      await tester.pumpWidget(
+        ChangeNotifierProvider<AudioPlayerService>.value(
+          value: audioService,
+          child: MaterialApp(
+            theme: AppTheme.darkTheme,
+            home: const SettingsScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Scroll down until Logout tile is built and visible
+      final logoutFinder = find.text('Logout');
+      await tester.scrollUntilVisible(
+        logoutFinder,
+        300,
+        scrollable: find.byType(Scrollable),
+      );
+      await tester.pumpAndSettle();
+
+      expect(logoutFinder, findsOneWidget);
+
+      await tester.tap(logoutFinder);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Log out?'), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
+
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Log out?'), findsNothing);
+      expect(find.byType(SettingsScreen), findsOneWidget);
+    },
+  );
 }
+
+
+
