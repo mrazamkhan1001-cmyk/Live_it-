@@ -11,6 +11,7 @@ class SongTile extends StatelessWidget {
   final bool isCurrent;
   final bool isPlaying;
   final int? indexNumber;
+  final bool? isFavorite;
   final VoidCallback onTap;
   final VoidCallback? onFavoriteTap;
   final VoidCallback? onMoreTap;
@@ -21,6 +22,7 @@ class SongTile extends StatelessWidget {
     this.isCurrent = false,
     this.isPlaying = false,
     this.indexNumber,
+    this.isFavorite,
     required this.onTap,
     this.onFavoriteTap,
     this.onMoreTap,
@@ -116,8 +118,10 @@ class SongTile extends StatelessWidget {
           if (onFavoriteTap != null)
             IconButton(
               icon: Icon(
-                song.isFavorite ? Icons.favorite : Icons.favorite_border,
-                color: song.isFavorite
+                (isFavorite ?? song.isFavorite)
+                    ? Icons.favorite
+                    : Icons.favorite_border,
+                color: (isFavorite ?? song.isFavorite)
                     ? AppColors.brightRed
                     : AppColors.secondaryText,
                 size: 20,

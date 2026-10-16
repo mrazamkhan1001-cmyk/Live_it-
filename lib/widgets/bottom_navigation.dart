@@ -17,39 +17,39 @@ class CustomBottomNavigation extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        border: Border(top: BorderSide(color: AppColors.divider, width: 1)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildNavItem(
-            index: 0,
-            icon: Icons.home_outlined,
-            activeIcon: Icons.home_rounded,
-            label: 'Home',
-          ),
-          _buildNavItem(
-            index: 1,
-            icon: Icons.search_rounded,
-            activeIcon: Icons.search_rounded,
-            label: 'Search',
-          ),
-          _buildNavItem(
-            index: 2,
-            icon: Icons.music_note_outlined,
-            activeIcon: Icons.music_note_rounded,
-            label: 'Library',
-          ),
-          _buildNavItem(
-            index: 3,
-            icon: Icons.person_outline_rounded,
-            activeIcon: Icons.person_rounded,
-            label: 'Profile',
-          ),
-        ],
+      color: Colors.black,
+      padding: const EdgeInsets.only(top: 8, bottom: 8),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildNavItem(
+              index: 0,
+              icon: Icons.home_rounded,
+              activeIcon: Icons.home_rounded,
+              label: 'Home',
+            ),
+            _buildNavItem(
+              index: 1,
+              icon: Icons.search_rounded,
+              activeIcon: Icons.search_rounded,
+              label: 'Search',
+            ),
+            _buildNavItem(
+              index: 2,
+              icon: Icons.collections_bookmark_outlined,
+              activeIcon: Icons.collections_bookmark_rounded,
+              label: 'Library',
+            ),
+            _buildNavItem(
+              index: 3,
+              icon: Icons.person_outline_rounded,
+              activeIcon: Icons.person_rounded,
+              label: 'Profile',
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -71,42 +71,42 @@ class CustomBottomNavigation extends StatelessWidget {
       },
       borderRadius: AppRadii.r12,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (isActive)
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 3,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1F0507),
-                  borderRadius: AppRadii.r8,
-                  border: Border.all(
-                    color: AppColors.brightRed.withValues(alpha: 0.6),
-                    width: 1.0,
-                  ),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: AppColors.redGlow,
-                      blurRadius: 6,
-                      spreadRadius: 0,
-                    ),
-                  ],
-                ),
-                child: Icon(activeIcon, color: AppColors.brightRed, size: 20),
-              )
-            else
-              Icon(icon, color: AppColors.secondaryText, size: 22),
-            const SizedBox(height: 3),
+            Icon(
+              isActive ? activeIcon : icon,
+              color: isActive ? AppColors.brightRed : AppColors.secondaryText,
+              size: 24,
+            ),
+            const SizedBox(height: 4),
             Text(
               label,
               style: TextStyle(
                 color: isActive ? AppColors.brightRed : AppColors.secondaryText,
                 fontSize: 11,
-                fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 2),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: isActive ? 14 : 0,
+              height: 2,
+              decoration: BoxDecoration(
+                color: isActive ? AppColors.brightRed : Colors.transparent,
+                borderRadius: BorderRadius.circular(1),
+                boxShadow: isActive
+                    ? const [
+                        BoxShadow(
+                          color: AppColors.redGlow,
+                          blurRadius: 4,
+                          spreadRadius: 0.5,
+                        ),
+                      ]
+                    : null,
               ),
             ),
           ],

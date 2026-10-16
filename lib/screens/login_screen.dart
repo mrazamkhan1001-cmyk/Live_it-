@@ -1,7 +1,9 @@
+import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuthException;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../services/audio_service.dart';
+import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
 import 'main_shell_screen.dart';
 import 'signup_screen.dart';
@@ -19,6 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _rememberMe = true;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -28,17 +31,165 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _onLogin() async {
-    final name = _emailController.text.trim();
-    if (name.isNotEmpty) {
-      await Provider.of<AudioPlayerService>(
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Please enter your email and password',
+            style: TextStyle(
+              color: Colors.white,
+            ),
+          ),
+          backgroundColor: AppColors.card,
+        ),
+      );
+      return;
+    }
+
+    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a valid email address'),
+          backgroundColor: AppColors.brightRed,
+        ),
+      );
+      return;
+    }
+
+    if (password.length < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Password must be at least 6 characters'),
+          backgroundColor: AppColors.brightRed,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      final cred = await AuthService.instance.signInWithEmail(email, password);
+      final user = cred.user;
+      final displayName = user?.displayName?.isNotEmpty == true
+          ? user!.displayName!
+          : (user?.email ?? email);
+
+      if (!mounted) return;
+      final audio = Provider.of<AudioPlayerService>(
         context,
         listen: false,
-      ).setUserName(name);
-    }
-    if (mounted) {
+      );
+      await audio.loadProfileForUser(user);
+      if (displayName.isNotEmpty && audio.rawUserName == 'Azam Khan') {
+        await audio.setUserName(displayName);
+      }
+      if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const MainShellScreen()),
       );
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      final message = _getFirebaseAuthErrorMessage(e);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: AppColors.brightRed,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      // STRICT: A failed sign-in must never grant access to the main app.
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Sign-in failed: ${e.toString()}'),
+          backgroundColor: AppColors.brightRed,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      // STRICT: A failed sign-in must never grant access to the main app.
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _onGoogleLogin() async {
+    setState(() => _isLoading = true);
+    try {
+      final cred = await AuthService.instance.signInWithGoogle();
+      if (cred == null) {
+        // User cancelled Google sign-in dialog; stay on screen cleanly
+        return;
+      }
+      final user = cred.user;
+      final displayName = user?.displayName?.isNotEmpty == true
+          ? user!.displayName!
+          : (user?.email ?? 'Azam Khan');
+
+      if (!mounted) return;
+      final audio = Provider.of<AudioPlayerService>(
+        context,
+        listen: false,
+      );
+      await audio.loadProfileForUser(user);
+      if (displayName.isNotEmpty && audio.rawUserName == 'Azam Khan') {
+        await audio.setUserName(displayName);
+      }
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const MainShellScreen()),
+      );
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      final message = _getFirebaseAuthErrorMessage(e);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: AppColors.brightRed,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Google Sign-in failed: ${e.toString()}'),
+          backgroundColor: AppColors.brightRed,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  String _getFirebaseAuthErrorMessage(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'user-not-found':
+        return 'No user found for that email address.';
+      case 'wrong-password':
+      case 'invalid-credential':
+        return 'Incorrect email or password. Please try again.';
+      case 'invalid-email':
+        return 'The email address is badly formatted.';
+      case 'user-disabled':
+        return 'This user account has been disabled.';
+      case 'too-many-requests':
+        return 'Too many failed login attempts. Please try again later.';
+      case 'network-request-failed':
+        return 'Network error. Please check your internet connection.';
+      case 'operation-not-allowed':
+        return 'Email/password sign-in is not enabled in Firebase Console.';
+      case 'popup-closed-by-user':
+      case 'cancelled-popup-request':
+        return 'Google Sign-in was cancelled.';
+      case 'unauthorized-domain':
+        return 'Domain not authorized in Firebase Console settings.';
+      default:
+        return e.message ?? 'Authentication error (${e.code}).';
     }
   }
 
@@ -103,14 +254,14 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     child: IntrinsicHeight(
                       child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+                        padding: const EdgeInsets.fromLTRB(14, 6, 16, 10),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Top-Left LIVE IT Logo (16dp left, 10dp top below SafeArea)
+                            // Top-Left LIVE IT Logo
                             Image.asset(
                               'assets/images/live_it_logo.png',
-                              width: 180,
+                              width: 200,
                               fit: BoxFit.contain,
                               filterQuality: FilterQuality.high,
                             ),
@@ -316,18 +467,19 @@ class _LoginScreenState extends State<LoginScreen> {
                                       ),
                                     ),
                                     const Spacer(),
-                                    Container(
+                                    SizedBox(
                                       width: 24,
                                       height: 24,
-                                      decoration: const BoxDecoration(
-                                        color: Colors.black,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: const Icon(
-                                        Icons.arrow_forward,
-                                        color: Colors.white,
-                                        size: 14,
-                                      ),
+                                      child: _isLoading
+                                          ? const SizedBox(
+                                              width: 16,
+                                              height: 16,
+                                              child: CircularProgressIndicator(
+                                                color: Colors.white,
+                                                strokeWidth: 2,
+                                              ),
+                                            )
+                                          : null,
                                     ),
                                   ],
                                 ),
@@ -393,7 +545,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   borderRadius: BorderRadius.circular(12),
                                   child: InkWell(
                                     borderRadius: BorderRadius.circular(12),
-                                    onTap: _onLogin,
+                                    onTap: _onGoogleLogin,
                                     child: const Stack(
                                       alignment: Alignment.center,
                                       children: [

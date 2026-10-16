@@ -1,8 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../services/audio_service.dart';
+import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/user_utils.dart';
 import 'edit_profile_screen.dart';
 import 'login_screen.dart';
 import 'settings_screen.dart';
@@ -130,6 +134,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authUser = AuthService.instance.currentUser;
     return Consumer<AudioPlayerService>(
       builder: (context, audio, child) {
         return Scaffold(
@@ -196,67 +201,77 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                             const SizedBox(height: 10),
 
-                            // 4. SASUKE AVATAR POSITIONED NEAR TOP
-                            Stack(
-                              alignment: Alignment.bottomRight,
-                              children: [
-                                Container(
-                                  width: 82,
-                                  height: 82,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: Colors.white38,
-                                      width: 2,
-                                    ),
-                                    boxShadow: const [
-                                      BoxShadow(
-                                        color: Colors.black54,
-                                        blurRadius: 16,
-                                        spreadRadius: 2,
+                            // 4. DYNAMIC AVATAR POSITIONED NEAR TOP
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => const EditProfileScreen(),
+                                  ),
+                                );
+                              },
+                              child: Stack(
+                                alignment: Alignment.bottomRight,
+                                children: [
+                                  Container(
+                                    width: 82,
+                                    height: 82,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Colors.white38,
+                                        width: 2,
                                       ),
-                                    ],
-                                  ),
-                                  child: ClipOval(
-                                    child: Image.asset(
-                                      'assets/images/sasuke_profile.jpg',
-                                      fit: BoxFit.cover,
-                                      filterQuality: FilterQuality.high,
+                                      boxShadow: const [
+                                        BoxShadow(
+                                          color: Colors.black54,
+                                          blurRadius: 16,
+                                          spreadRadius: 2,
+                                        ),
+                                      ],
+                                    ),
+                                    child: ClipOval(
+                                      child: _buildAvatarImage(
+                                        audio.userProfile.photoUrl,
+                                        size: 82,
+                                      ),
                                     ),
                                   ),
-                                ),
 
-                                // Camera Icon Badge
-                                Container(
-                                  padding: const EdgeInsets.all(5),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF151515)
-                                        .withValues(alpha: 0.9),
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: AppColors.divider,
-                                      width: 1.5,
+                                  // Camera Icon Badge
+                                  Container(
+                                    padding: const EdgeInsets.all(5),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF151515)
+                                          .withValues(alpha: 0.9),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: AppColors.divider,
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                    child: const Icon(
+                                      Icons.camera_alt_rounded,
+                                      color: Colors.white,
+                                      size: 13,
                                     ),
                                   ),
-                                  child: const Icon(
-                                    Icons.camera_alt_rounded,
-                                    color: Colors.white,
-                                    size: 13,
-                                  ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
 
                             const SizedBox(height: 12),
 
-                            // 5. USER NAME (Azam Khan) + RED VERIFICATION BADGE
+                            // 5. USER NAME + RED VERIFICATION BADGE
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(
-                                  audio.rawUserName.isNotEmpty
-                                      ? audio.rawUserName
-                                      : 'Azam Khan',
+                                  UserUtils.resolveDisplayName(
+                                    savedName: audio.userProfile.name,
+                                    authDisplayName: authUser?.displayName,
+                                    email: authUser?.email,
+                                  ),
                                   style: const TextStyle(
                                     color: AppColors.primaryText,
                                     fontSize: 22,
@@ -274,44 +289,78 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                             const SizedBox(height: 4),
 
-                            // 6. USERNAME (@azam_uchiha)
-                            const Text(
-                              '@azam_uchiha',
-                              style: TextStyle(
+                            // 6. USERNAME
+                            Text(
+                              '@${UserUtils.resolveUsername(
+                                savedUsername: audio.userProfile.username,
+                                email: authUser?.email,
+                              )}',
+                              style: const TextStyle(
                                 color: AppColors.secondaryText,
                                 fontSize: 13,
                               ),
                             ),
+
+                            // Real Email Address when available
+                            if (authUser?.email != null &&
+                                authUser!.email!.trim().isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                authUser.email!.trim(),
+                                style: TextStyle(
+                                  color: AppColors.secondaryText
+                                      .withValues(alpha: 0.75),
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
                             const SizedBox(height: 6),
 
-                            // 7. PROFILE BIO ("Music is my genjutsu.")
-                            const Text(
-                              '"Music is my genjutsu."',
-                              style: TextStyle(
-                                color: AppColors.secondaryText,
-                                fontSize: 13,
-                                fontStyle: FontStyle.italic,
+                            // 7. PROFILE BIO (displayed only when user provides one)
+                            if (audio.userProfile.bio.trim().isNotEmpty) ...[
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                ),
+                                child: Text(
+                                  '"${audio.userProfile.bio.trim()}"',
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    color: AppColors.secondaryText,
+                                    fontSize: 13,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
                               ),
-                            ),
+                            ],
                             const SizedBox(height: 24),
 
-                            // 8. PROFILE STATS (Centered 3-column layout)
+                            // 8. PROFILE STATS (Centered 3-column layout with real live counts)
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
-                                _buildStatColumn('Songs', '523'),
+                                _buildStatColumn(
+                                  'Favorites',
+                                  '${audio.favorites.length}',
+                                ),
                                 Container(
                                   height: 28,
                                   width: 1,
                                   color: Colors.white24,
                                 ),
-                                _buildStatColumn('Playlists', '12'),
+                                _buildStatColumn(
+                                  'Playlists',
+                                  '${audio.playlists.length}',
+                                ),
                                 Container(
                                   height: 28,
                                   width: 1,
                                   color: Colors.white24,
                                 ),
-                                _buildStatColumn('Minutes', '2.4K'),
+                                _buildStatColumn(
+                                  'History',
+                                  '${audio.recentlyPlayed.length}',
+                                ),
                               ],
                             ),
                             const SizedBox(height: 26),
@@ -518,6 +567,62 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildAvatarImage(String? photoUrl, {double size = 82}) {
+    final authUser = AuthService.instance.currentUser;
+    String? authPhoto;
+    try {
+      authPhoto = authUser?.photoURL;
+    } catch (_) {}
+    final effectiveUrl = (photoUrl != null && photoUrl.isNotEmpty)
+        ? photoUrl
+        : (authPhoto != null && authPhoto.isNotEmpty
+            ? authPhoto
+            : null);
+
+    if (effectiveUrl != null && effectiveUrl.isNotEmpty) {
+      if (effectiveUrl.startsWith('http://') ||
+          effectiveUrl.startsWith('https://')) {
+        return Image.network(
+          effectiveUrl,
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          filterQuality: FilterQuality.high,
+          errorBuilder: (_, __, ___) => _buildDefaultAvatar(size),
+        );
+      } else {
+        final file = File(effectiveUrl);
+        if (file.existsSync()) {
+          return Image.file(
+            file,
+            width: size,
+            height: size,
+            fit: BoxFit.cover,
+            filterQuality: FilterQuality.high,
+            errorBuilder: (_, __, ___) => _buildDefaultAvatar(size),
+          );
+        }
+      }
+    }
+
+    return _buildDefaultAvatar(size);
+  }
+
+  Widget _buildDefaultAvatar(double size) {
+    return Image.asset(
+      'assets/images/sasuke_profile.png',
+      width: size,
+      height: size,
+      fit: BoxFit.cover,
+      filterQuality: FilterQuality.high,
+      errorBuilder: (_, __, ___) => Icon(
+        Icons.person,
+        color: AppColors.brightRed,
+        size: size * 0.5,
       ),
     );
   }

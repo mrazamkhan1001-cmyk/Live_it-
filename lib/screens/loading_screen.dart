@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../services/audio_service.dart';
+import '../services/auth_service.dart';
 import 'login_screen.dart';
+import 'main_shell_screen.dart';
 
 /// Animated Loading Screen for LIVE IT — BY AZAM
-/// Features a real 0-100% progress animation over 3 seconds that automatically navigates to LoginScreen.
-/// Renders authentic Japanese typography, LIVE IT logo branding, animated glowing progress bar,
-/// and a cinematic outer red border programmatically on top of the clean background artwork.
+/// Features a real 0-100% progress animation that inspects Firebase's auth state upon completion.
+/// Authenticated users with active sessions are sent to MainShellScreen,
+/// while signed-out users are routed to LoginScreen.
 class LoadingScreen extends StatefulWidget {
-  const LoadingScreen({super.key});
+  final Duration? duration;
+
+  const LoadingScreen({super.key, this.duration});
 
   @override
   State<LoadingScreen> createState() => _LoadingScreenState();
@@ -32,7 +38,7 @@ class _LoadingScreenState extends State<LoadingScreen>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 3),
+      duration: widget.duration ?? const Duration(seconds: 3),
     );
 
     _animation = Tween<double>(
@@ -42,7 +48,20 @@ class _LoadingScreenState extends State<LoadingScreen>
 
     _controller.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
-        if (mounted) {
+        if (!mounted) return;
+        final user = AuthService.instance.currentUser;
+        if (user != null) {
+          final displayName = user.displayName?.isNotEmpty == true
+              ? user.displayName!
+              : (user.email ?? 'Azam Khan');
+          final audio = Provider.of<AudioPlayerService>(context, listen: false);
+          audio.loadProfileForUser(user);
+          audio.setUserName(displayName);
+          if (!mounted) return;
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const MainShellScreen()),
+          );
+        } else {
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (_) => const LoginScreen()),
           );
@@ -258,32 +277,6 @@ class _LoadingScreenState extends State<LoadingScreen>
                         offset: Offset(0, 0),
                       ),
                     ],
-                  ),
-                ),
-              ),
-
-              // 6. SUBTLE OUTER RED ROUNDED BORDER FRAME
-              Positioned(
-                top: 14,
-                left: 14,
-                right: 14,
-                bottom: 14,
-                child: IgnorePointer(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(22),
-                      border: Border.all(
-                        color: const Color(0xFFFF1018).withValues(alpha: 0.65),
-                        width: 1.8,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFFF1018).withValues(alpha: 0.2),
-                          blurRadius: 10,
-                          spreadRadius: 0,
-                        ),
-                      ],
-                    ),
                   ),
                 ),
               ),

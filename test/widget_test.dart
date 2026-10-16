@@ -343,67 +343,118 @@ void main() {
       audioService.addToQueue(testSong1);
       audioService.addToQueue(testSong2);
 
-      int switchedTab = -1;
-
       await tester.pumpWidget(
         ChangeNotifierProvider<AudioPlayerService>.value(
           value: audioService,
           child: MaterialApp(
             theme: AppTheme.darkTheme,
-            home: HomeScreen(
-              onNavigateToTab: (tab) {
-                switchedTab = tab;
-              },
-            ),
+            home: const HomeScreen(),
           ),
         ),
       );
       await tester.pumpAndSettle();
 
-      // 1. Verify Branding & Header
-      expect(find.text('LIVE IT'), findsOneWidget);
-      expect(find.text('BY AZAM KHAN'), findsOneWidget);
-      expect(find.byIcon(Icons.menu_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.notifications_none_rounded), findsOneWidget);
+      // Verify hero artwork and logo image assets
+      final logoFinder = find.byWidgetPredicate(
+        (widget) =>
+            widget is Image &&
+            widget.image is AssetImage &&
+            (widget.image as AssetImage).assetName ==
+                'assets/images/live_it_logo.png',
+      );
+      expect(logoFinder, findsOneWidget);
 
-      // 2. Verify Search Bar
-      expect(find.text('Search songs, artists, albums...'), findsOneWidget);
-      await tester.tap(find.text('Search songs, artists, albums...'));
-      await tester.pump();
-      expect(switchedTab, 1);
+      final heroBgFinder = find.byWidgetPredicate(
+        (widget) =>
+            widget is Image &&
+            widget.image is AssetImage &&
+            ((widget.image as AssetImage).assetName ==
+                    'assets/images/itachi_library_bg.png' ||
+                (widget.image as AssetImage).assetName ==
+                    'assets/images/itachi_face_bg.png'),
+      );
+      expect(heroBgFinder, findsOneWidget);
 
-      // 3. Verify Categories
-      expect(find.text('For You'), findsOneWidget);
-      expect(find.text('Anime'), findsOneWidget);
-      expect(find.text('Chill'), findsOneWidget);
-      expect(find.text('Rap'), findsOneWidget);
-      expect(find.text('Lo-fi'), findsOneWidget);
+      // 2. Verify Removed Elements are ABSENT
+      expect(find.byIcon(Icons.menu_rounded), findsNothing);
+      expect(find.byIcon(Icons.notifications_none_rounded), findsNothing);
+      expect(find.text('Search songs, artists, albums...'), findsNothing);
+      expect(find.text('For You'), findsNothing);
+      expect(find.text('Anime'), findsNothing);
+      expect(find.text('Chill'), findsNothing);
+      expect(find.text('Uchiha Vibes'), findsNothing);
+      expect(find.textContaining('Good morning'), findsNothing);
 
-      // 4. Verify Featured Hero Banner
-      expect(find.text('Uchiha Vibes'), findsOneWidget);
-      expect(find.text('Music for the ones who understand...'), findsOneWidget);
-
-      // 5. Verify Discovery Section Headers
+      // 3. Verify Discovery Section Headers
       expect(find.text('Recently Played'), findsOneWidget);
       expect(find.text('Trending Songs'), findsOneWidget);
-      expect(find.text('Popular Artists'), findsOneWidget);
-      expect(find.text('Trending Albums'), findsOneWidget);
-      expect(find.text('Recommended For You'), findsOneWidget);
-      expect(find.text('New Releases'), findsOneWidget);
+      expect(find.text('See All'), findsNWidgets(2));
 
-      // 6. Verify Popular Artists
-      expect(find.text('Audius Lo-Fi'), findsOneWidget);
-      expect(find.text('Naruto Beats'), findsWidgets);
-
-      // 7. Verify Trending Albums
-      expect(find.text('Arcane Soundtrack'), findsOneWidget);
+      // 4. Verify Trending Songs items are rendered
+      expect(find.text('Uchiha Legacy'), findsOneWidget);
+      expect(find.text('Mangekyo Trance'), findsOneWidget);
+      expect(find.text('Azam Khan'), findsOneWidget);
     },
   );
 
   testWidgets(
-    'Phase 7 HomeScreen - Quick Menu opens and renders navigation actions',
+    'Redesigned HomeScreen - song tap plays track and favorite button toggles',
     (WidgetTester tester) async {
       final audioService = AudioPlayerService();
+      final testSong = Song(
+        id: 'trending_1',
+        title: 'Way Hi (Naisu Remix)',
+        artist: 'Naisa',
+        album: 'Naisu Beats',
+        artworkUrl: 'https://audius.co/art_naisu.jpg',
+        streamUrl: 'https://audius.co/stream_naisu.mp3',
+        durationMs: 190000,
+      );
+
+      audioService.addToQueue(testSong);
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<AudioPlayerService>.value(
+          value: audioService,
+          child: MaterialApp(
+            theme: AppTheme.darkTheme,
+            home: const HomeScreen(),
+          ),
+        ),
+      );
+      // Ensure song row is visible in viewport and tap to play
+      final songFinder = find.text('Way Hi (Naisu Remix)');
+      await tester.ensureVisible(songFinder);
+      await tester.pumpAndSettle();
+
+      await tester.tap(songFinder);
+      await tester.pump();
+      expect(audioService.currentSong?.id, 'trending_1');
+
+      // Tap favorite heart icon
+      final favFinder = find.byIcon(Icons.favorite_border);
+      expect(favFinder, findsWidgets);
+      await tester.tap(favFinder.first);
+      await tester.pump();
+      expect(audioService.isSongFavorite('trending_1'), isTrue);
+    },
+  );
+
+  testWidgets(
+    'Redesigned HomeScreen - Three-dot overflow menu opens bottom sheet options',
+    (WidgetTester tester) async {
+      final audioService = AudioPlayerService();
+      final testSong = Song(
+        id: 'overflow_1',
+        title: 'After Dark',
+        artist: 'Mr.Kitty',
+        album: 'Time',
+        artworkUrl: 'https://audius.co/art_kitty.jpg',
+        streamUrl: 'https://audius.co/stream_kitty.mp3',
+        durationMs: 250000,
+      );
+
+      audioService.addToQueue(testSong);
 
       await tester.pumpWidget(
         ChangeNotifierProvider<AudioPlayerService>.value(
@@ -416,44 +467,22 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Tap menu button
-      await tester.tap(find.byIcon(Icons.menu_rounded));
+      // Ensure song row is visible in viewport
+      final afterDarkFinder = find.text('After Dark');
+      await tester.ensureVisible(afterDarkFinder);
       await tester.pumpAndSettle();
 
-      // Verify Quick Menu items
-      expect(find.text('LIVE IT — QUICK MENU'), findsOneWidget);
-      expect(find.text('Audio Equalizer'), findsOneWidget);
-      expect(find.text('Liked Songs'), findsOneWidget);
-      expect(find.text('Downloads'), findsOneWidget);
-      expect(find.text('Settings'), findsOneWidget);
-      expect(find.text('About LIVE IT'), findsOneWidget);
-    },
-  );
-
-  testWidgets(
-    'Phase 7 HomeScreen - Notifications sheet opens on notification bell tap',
-    (WidgetTester tester) async {
-      final audioService = AudioPlayerService();
-
-      await tester.pumpWidget(
-        ChangeNotifierProvider<AudioPlayerService>.value(
-          value: audioService,
-          child: MaterialApp(
-            theme: AppTheme.darkTheme,
-            home: const HomeScreen(),
-          ),
-        ),
-      );
+      // Tap 3-dot overflow menu
+      final moreFinder = find.byIcon(Icons.more_vert_rounded);
+      expect(moreFinder, findsOneWidget);
+      await tester.tap(moreFinder);
       await tester.pumpAndSettle();
 
-      // Tap notification button
-      await tester.tap(find.byIcon(Icons.notifications_none_rounded));
-      await tester.pumpAndSettle();
-
-      // Verify Notifications content
-      expect(find.text('Notifications'), findsOneWidget);
-      expect(find.text('Audius Network Connected'), findsOneWidget);
-      expect(find.text('Trending Chart Updated'), findsOneWidget);
+      // Verify modal bottom sheet contents
+      expect(find.text('Play Now'), findsOneWidget);
+      expect(find.text('Add to Liked Songs'), findsOneWidget);
+      expect(find.text('Add to Queue'), findsOneWidget);
+      expect(find.text('Add to Playlist'), findsOneWidget);
     },
   );
 
@@ -651,7 +680,7 @@ void main() {
             widget.image is AssetImage &&
             (widget.image as AssetImage).assetName ==
                 'assets/images/live_it_logo.png' &&
-            widget.width == 100 &&
+            (widget.width == 100 || widget.width == 180 || widget.width == 200) &&
             widget.fit == BoxFit.contain,
       );
       expect(logoFinder, findsOneWidget);
@@ -755,7 +784,7 @@ void main() {
             widget.image is AssetImage &&
             (widget.image as AssetImage).assetName ==
                 'assets/images/live_it_logo.png' &&
-            widget.width == 100 &&
+            (widget.width == 100 || widget.width == 180 || widget.width == 200) &&
             widget.fit == BoxFit.contain,
       );
       expect(logoFinder, findsOneWidget);
@@ -863,7 +892,8 @@ void main() {
       final confirmBtn = find.widgetWithText(ElevatedButton, 'Logout');
       expect(confirmBtn, findsOneWidget);
       await tester.tap(confirmBtn);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
 
       // Verify navigation to LoginScreen
       expect(find.byType(LoginScreen), findsOneWidget);

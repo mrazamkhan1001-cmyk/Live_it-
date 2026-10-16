@@ -2,36 +2,111 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as developer;
 
+import 'package:firebase_auth/firebase_auth.dart' show User;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/song.dart';
 import '../models/playlist.dart';
+import '../utils/user_utils.dart';
 
 /// User profile data model for non-sensitive profile information
 class UserProfile {
   final String name;
   final String username;
   final String bio;
+  final String? photoUrl;
 
   const UserProfile({
     required this.name,
     required this.username,
     required this.bio,
+    this.photoUrl,
   });
+
+  const UserProfile.empty()
+      : name = '',
+        username = '',
+        bio = '',
+        photoUrl = null;
+
+  factory UserProfile.defaultFor(User? user) {
+    final resolvedName = UserUtils.resolveDisplayName(
+      authDisplayName: user?.displayName,
+      email: user?.email,
+    );
+    final resolvedUsername = UserUtils.resolveUsername(
+      email: user?.email,
+    );
+    return UserProfile(
+      name: resolvedName,
+      username: resolvedUsername,
+      bio: '',
+      photoUrl: user?.photoURL,
+    );
+  }
+
+  UserProfile copyWith({
+    String? name,
+    String? username,
+    String? bio,
+    String? photoUrl,
+    bool clearPhotoUrl = false,
+  }) {
+    return UserProfile(
+      name: name ?? this.name,
+      username: username ?? this.username,
+      bio: bio ?? this.bio,
+      photoUrl: clearPhotoUrl ? null : (photoUrl ?? this.photoUrl),
+    );
+  }
+
+  bool get isEmpty =>
+      name.isEmpty && username.isEmpty && bio.isEmpty && photoUrl == null;
+  bool get isNotEmpty => !isEmpty;
 
   Map<String, dynamic> toJson() => {
     'name': name,
     'username': username,
     'bio': bio,
+    if (photoUrl != null) 'photoUrl': photoUrl,
   };
 
-  factory UserProfile.fromJson(Map<String, dynamic> json) {
+  factory UserProfile.fromJson(Map<String, dynamic> json, {User? authUser}) {
+    final rawName = json['name']?.toString() ?? '';
+    final rawUsername = json['username']?.toString() ?? '';
+    final rawBio = json['bio']?.toString() ?? '';
+    final photo = json['photoUrl']?.toString() ?? authUser?.photoURL;
+
+    final resolvedName = UserUtils.resolveDisplayName(
+      savedName: rawName,
+      authDisplayName: authUser?.displayName,
+      email: authUser?.email,
+    );
+    final resolvedUsername = UserUtils.resolveUsername(
+      savedUsername: rawUsername,
+      email: authUser?.email,
+    );
+
     return UserProfile(
-      name: json['name']?.toString() ?? 'Azam Khan',
-      username: json['username']?.toString() ?? 'azam_uchiha',
-      bio: json['bio']?.toString() ?? 'Music for the ones who understand...',
+      name: resolvedName,
+      username: resolvedUsername,
+      bio: rawBio == 'Music for the ones who understand...' ? '' : rawBio,
+      photoUrl: photo,
     );
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is UserProfile &&
+          runtimeType == other.runtimeType &&
+          name == other.name &&
+          username == other.username &&
+          bio == other.bio &&
+          photoUrl == other.photoUrl;
+
+  @override
+  int get hashCode => Object.hash(name, username, bio, photoUrl);
 }
 
 /// Persistent Audio Quality Settings
@@ -242,26 +317,12 @@ class StorageService {
   static const String _keyNotificationSettings = 'settings_notifications';
   static const String _keyAnimationSettings = 'settings_animations';
 
-  // Async write queue mutex to prevent out-of-order writes
-  static Future<void> _writeQueue = Future.value();
+  /// Resets internal write queue state for testing environments
+  static void resetForTesting() {}
 
-  /// Execute an asynchronous write operation sequentially through the mutex queue
-  static Future<T> _enqueueWrite<T>(Future<T> Function() operation) {
-    final completer = Completer<T>();
-    _writeQueue = _writeQueue
-        .then((_) => operation())
-        .then((result) {
-          completer.complete(result);
-        })
-        .catchError((Object error, StackTrace stackTrace) {
-          developer.log(
-            'StorageService write error: $error',
-            error: error,
-            stackTrace: stackTrace,
-          );
-          completer.completeError(error, stackTrace);
-        });
-    return completer.future;
+  /// Execute an asynchronous write operation safely
+  static Future<T> _enqueueWrite<T>(Future<T> Function() operation) async {
+    return await operation();
   }
 
   /// Initialize storage and perform schema migration if necessary
@@ -318,45 +379,82 @@ class StorageService {
     });
   }
 
-  static Future<UserProfile> getUserProfile() async {
+  static String _profileKeyFor(String? uid) {
+    if (uid != null && uid.isNotEmpty) {
+      return '${_keyUserProfile}_$uid';
+    }
+    return _keyUserProfile;
+  }
+
+  static Future<UserProfile> getUserProfile({String? uid, User? authUser}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final jsonStr = prefs.getString(_keyUserProfile);
+      String? jsonStr;
+      if (uid != null && uid.isNotEmpty) {
+        jsonStr = prefs.getString(_profileKeyFor(uid));
+      } else {
+        jsonStr = prefs.getString(_keyUserProfile);
+      }
       if (jsonStr != null && jsonStr.isNotEmpty) {
         final map = jsonDecode(jsonStr);
         if (map is Map<String, dynamic>) {
-          return UserProfile.fromJson(map);
+          return UserProfile.fromJson(map, authUser: authUser);
         }
       }
-      final name = await getUserName();
-      return UserProfile(
-        name: name,
-        username: '${name.toLowerCase().replaceAll(' ', '_')}_uchiha',
-        bio: 'Music for the ones who understand...',
-      );
+      return UserProfile.defaultFor(authUser);
     } catch (_) {
-      return const UserProfile(
-        name: 'Azam Khan',
-        username: 'azam_uchiha',
-        bio: 'Music for the ones who understand...',
-      );
+      return UserProfile.defaultFor(authUser);
     }
   }
 
-  static Future<void> saveUserProfile(UserProfile profile) async {
+  static Future<void> saveUserProfile(UserProfile profile, {String? uid}) async {
     return _enqueueWrite(() async {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_keyUserProfile, jsonEncode(profile.toJson()));
+      final jsonString = jsonEncode(profile.toJson());
+      if (uid != null && uid.isNotEmpty) {
+        await prefs.setString(_profileKeyFor(uid), jsonString);
+      } else {
+        await prefs.setString(_keyUserProfile, jsonString);
+      }
       await prefs.setString(_keyUserName, profile.name);
     });
   }
 
+  static Future<void> clearUserProfile({String? uid}) async {
+    return _enqueueWrite(() async {
+      final prefs = await SharedPreferences.getInstance();
+      if (uid != null && uid.isNotEmpty) {
+        await prefs.remove(_profileKeyFor(uid));
+      }
+      await prefs.remove(_keyUserProfile);
+      await prefs.remove(_keyUserName);
+    });
+  }
+
+  static String _favoritesKeyFor(String? uid) =>
+      (uid != null && uid.isNotEmpty) ? '${_keyFavorites}_$uid' : _keyFavorites;
+
+  static String _playlistsKeyFor(String? uid) =>
+      (uid != null && uid.isNotEmpty) ? '${_keyPlaylists}_$uid' : _keyPlaylists;
+
+  static String _recentlyPlayedKeyFor(String? uid) =>
+      (uid != null && uid.isNotEmpty)
+          ? '${_keyRecentlyPlayed}_$uid'
+          : _keyRecentlyPlayed;
+
   // --- FAVORITES ---
 
-  static Future<List<Song>> getFavorites() async {
+  static Future<List<Song>> getFavorites({String? uid}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final jsonStr = prefs.getString(_keyFavorites);
+      final key = _favoritesKeyFor(uid);
+      var jsonStr = prefs.getString(key);
+      if ((jsonStr == null || jsonStr.isEmpty) && uid != null && uid.isNotEmpty) {
+        jsonStr = prefs.getString(_keyFavorites);
+        if (jsonStr != null && jsonStr.isNotEmpty) {
+          await prefs.setString(key, jsonStr);
+        }
+      }
       if (jsonStr == null || jsonStr.isEmpty) return [];
       final List list = jsonDecode(jsonStr);
       final List<Song> results = [];
@@ -379,7 +477,7 @@ class StorageService {
     }
   }
 
-  static Future<void> saveFavorites(List<Song> songs) async {
+  static Future<void> saveFavorites(List<Song> songs, {String? uid}) async {
     return _enqueueWrite(() async {
       final prefs = await SharedPreferences.getInstance();
       final Set<String> seenIds = {};
@@ -391,16 +489,23 @@ class StorageService {
           serialized.add(s.copyWith(isFavorite: true).toJson());
         }
       }
-      await prefs.setString(_keyFavorites, jsonEncode(serialized));
+      await prefs.setString(_favoritesKeyFor(uid), jsonEncode(serialized));
     });
   }
 
   // --- PLAYLISTS ---
 
-  static Future<List<Playlist>> getPlaylists() async {
+  static Future<List<Playlist>> getPlaylists({String? uid}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final jsonStr = prefs.getString(_keyPlaylists);
+      final key = _playlistsKeyFor(uid);
+      var jsonStr = prefs.getString(key);
+      if ((jsonStr == null || jsonStr.isEmpty) && uid != null && uid.isNotEmpty) {
+        jsonStr = prefs.getString(_keyPlaylists);
+        if (jsonStr != null && jsonStr.isNotEmpty) {
+          await prefs.setString(key, jsonStr);
+        }
+      }
       if (jsonStr == null || jsonStr.isEmpty) return [];
       final List list = jsonDecode(jsonStr);
       final List<Playlist> results = [];
@@ -423,7 +528,7 @@ class StorageService {
     }
   }
 
-  static Future<void> savePlaylists(List<Playlist> playlists) async {
+  static Future<void> savePlaylists(List<Playlist> playlists, {String? uid}) async {
     return _enqueueWrite(() async {
       final prefs = await SharedPreferences.getInstance();
       final Set<String> seenIds = {};
@@ -435,16 +540,23 @@ class StorageService {
           serialized.add(p.toJson());
         }
       }
-      await prefs.setString(_keyPlaylists, jsonEncode(serialized));
+      await prefs.setString(_playlistsKeyFor(uid), jsonEncode(serialized));
     });
   }
 
   // --- RECENTLY PLAYED ---
 
-  static Future<List<Song>> getRecentlyPlayed() async {
+  static Future<List<Song>> getRecentlyPlayed({String? uid}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final jsonStr = prefs.getString(_keyRecentlyPlayed);
+      final key = _recentlyPlayedKeyFor(uid);
+      var jsonStr = prefs.getString(key);
+      if ((jsonStr == null || jsonStr.isEmpty) && uid != null && uid.isNotEmpty) {
+        jsonStr = prefs.getString(_keyRecentlyPlayed);
+        if (jsonStr != null && jsonStr.isNotEmpty) {
+          await prefs.setString(key, jsonStr);
+        }
+      }
       if (jsonStr == null || jsonStr.isEmpty) return [];
       final List list = jsonDecode(jsonStr);
       final List<Song> results = [];
@@ -469,6 +581,7 @@ class StorageService {
 
   static Future<void> saveRecentlyPlayed(
     List<Song> songs, {
+    String? uid,
     int limit = 50,
   }) async {
     return _enqueueWrite(() async {
@@ -483,7 +596,7 @@ class StorageService {
           if (serialized.length >= limit) break;
         }
       }
-      await prefs.setString(_keyRecentlyPlayed, jsonEncode(serialized));
+      await prefs.setString(_recentlyPlayedKeyFor(uid), jsonEncode(serialized));
     });
   }
 

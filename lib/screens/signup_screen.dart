@@ -1,7 +1,9 @@
+import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuthException;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../services/audio_service.dart';
+import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
 import 'login_screen.dart';
 import 'main_shell_screen.dart';
@@ -32,6 +34,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -45,28 +48,166 @@ class _SignupScreenState extends State<SignupScreen> {
 
   void _onSignup() async {
     final name = _nameController.text.trim();
-    if (name.isNotEmpty) {
-      await Provider.of<AudioPlayerService>(
+    final email = _emailController.text.trim();
+    final username = _usernameController.text.trim();
+    final password = _passwordController.text;
+    final confirmPassword = _confirmPasswordController.text;
+
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter your full name'),
+          backgroundColor: AppColors.brightRed,
+        ),
+      );
+      return;
+    }
+
+    if (email.isEmpty || !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a valid email address'),
+          backgroundColor: AppColors.brightRed,
+        ),
+      );
+      return;
+    }
+
+    if (password.length < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Password must be at least 6 characters long'),
+          backgroundColor: AppColors.brightRed,
+        ),
+      );
+      return;
+    }
+
+    if (password != confirmPassword) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Passwords do not match'),
+          backgroundColor: AppColors.brightRed,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      final cred = await AuthService.instance.signUpWithEmail(
+        email: email,
+        password: password,
+        displayName: name,
+        username: username.isNotEmpty ? username : null,
+      );
+      final user = cred.user;
+      final displayName = user?.displayName?.isNotEmpty == true
+          ? user!.displayName!
+          : name;
+
+      if (!mounted) return;
+      final audio = Provider.of<AudioPlayerService>(
         context,
         listen: false,
-      ).setUserName(name);
-    }
-    if (mounted) {
+      );
+      await audio.loadProfileForUser(user);
+      if (displayName.isNotEmpty && audio.rawUserName == 'Azam Khan') {
+        await audio.setUserName(displayName);
+      }
+      if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const MainShellScreen()),
       );
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      final message = _getFirebaseSignupErrorMessage(e);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: AppColors.brightRed,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      // STRICT: A failed sign-up must never grant access to the main app.
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Registration failed: ${e.toString()}'),
+          backgroundColor: AppColors.brightRed,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      // STRICT: A failed sign-up must never grant access to the main app.
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   void _onGoogleLogin() async {
-    await Provider.of<AudioPlayerService>(
-      context,
-      listen: false,
-    ).setUserName('Azam Khan');
-    if (mounted) {
+    setState(() => _isLoading = true);
+    try {
+      final cred = await AuthService.instance.signInWithGoogle();
+      if (cred == null) {
+        // User cancelled Google sign-in; remain cleanly on screen
+        return;
+      }
+      final user = cred.user;
+      final displayName = user?.displayName?.isNotEmpty == true
+          ? user!.displayName!
+          : (user?.email ?? 'Azam Khan');
+
+      if (!mounted) return;
+      final audio = Provider.of<AudioPlayerService>(
+        context,
+        listen: false,
+      );
+      await audio.loadProfileForUser(user);
+      if (displayName.isNotEmpty && audio.rawUserName == 'Azam Khan') {
+        await audio.setUserName(displayName);
+      }
+      if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const MainShellScreen()),
       );
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message ?? 'Google Sign-in failed (${e.code}).'),
+          backgroundColor: AppColors.brightRed,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Google Sign-in failed: ${e.toString()}'),
+          backgroundColor: AppColors.brightRed,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  String _getFirebaseSignupErrorMessage(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'email-already-in-use':
+        return 'An account already exists for that email address.';
+      case 'invalid-email':
+        return 'The email address format is invalid.';
+      case 'operation-not-allowed':
+        return 'Email/password sign-in is not enabled in Firebase Console.';
+      case 'weak-password':
+        return 'The password is too weak. Please use a stronger password.';
+      case 'network-request-failed':
+        return 'Network error. Please check your internet connection.';
+      default:
+        return e.message ?? 'Registration failed (${e.code}).';
     }
   }
 
@@ -253,15 +394,24 @@ class _SignupScreenState extends State<SignupScreen> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            child: const Text(
-                              'Create Account',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
+                            child: _isLoading
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Text(
+                                    'Create Account',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
                           ),
                         ),
                         const SizedBox(height: 16),

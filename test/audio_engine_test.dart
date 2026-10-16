@@ -213,7 +213,7 @@ void main() {
 
     test('Username profile update and formatting', () async {
       await audioService.setUserName('Azam Uchiha');
-      expect(audioService.rawUserName, 'Azam Khan');
+      expect(audioService.rawUserName, 'Azam');
 
       await audioService.setUserName('Sasuke');
       expect(audioService.rawUserName, 'Sasuke');

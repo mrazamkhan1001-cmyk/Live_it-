@@ -33,133 +33,161 @@ class MiniPlayer extends StatelessWidget {
             height: 64,
             margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: AppColors.card,
+              color: const Color(0xFF0D0D0D),
               borderRadius: AppRadii.r12,
-              border: Border.all(color: AppColors.divider, width: 1),
-              boxShadow: AppShadows.card,
+              border: Border.all(color: AppColors.brightRed, width: 1.0),
+              boxShadow: const [
+                BoxShadow(
+                  color: AppColors.redGlow,
+                  blurRadius: 8,
+                  spreadRadius: 0,
+                ),
+              ],
             ),
             child: ClipRRect(
               borderRadius: AppRadii.r12,
-              child: Column(
+              child: Stack(
                 children: [
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Row(
-                        children: [
-                          // Artwork Thumbnail
-                          ClipRRect(
-                            borderRadius: AppRadii.r8,
-                            child: Image.network(
-                              song.artworkUrl,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Row(
+                      children: [
+                        // Artwork Thumbnail
+                        ClipRRect(
+                          borderRadius: AppRadii.r8,
+                          child: Image.network(
+                            song.artworkUrl,
+                            width: 44,
+                            height: 44,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
                               width: 44,
                               height: 44,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Container(
-                                width: 44,
-                                height: 44,
-                                color: AppColors.darkRed,
-                                child: const Icon(
-                                  Icons.music_note,
-                                  color: AppColors.brightRed,
-                                  size: 22,
-                                ),
+                              color: AppColors.darkRed,
+                              child: const Icon(
+                                Icons.music_note,
+                                color: AppColors.brightRed,
+                                size: 22,
                               ),
                             ),
                           ),
-                          const SizedBox(width: 12),
+                        ),
+                        const SizedBox(width: 12),
 
-                          // Title & Artist
-                          Expanded(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  song.title,
-                                  style: AppTypography.titleMedium,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                        // Title & Artist
+                        Expanded(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                song.title,
+                                style: const TextStyle(
+                                  color: AppColors.primaryText,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
                                 ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  song.artist,
-                                  style: AppTypography.bodySmall,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                song.artist,
+                                style: const TextStyle(
+                                  color: AppColors.secondaryText,
+                                  fontSize: 12,
                                 ),
-                              ],
-                            ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
                           ),
+                        ),
 
-                          // Favorite Heart Button
-                          IconButton(
-                            icon: Icon(
-                              audio.isSongFavorite(song.id)
-                                  ? Icons.favorite
-                                  : Icons.favorite_border,
-                              color: audio.isSongFavorite(song.id)
-                                  ? AppColors.brightRed
-                                  : AppColors.secondaryText,
-                              size: 20,
-                            ),
-                            onPressed: () {
-                              LiveItHaptics.selection();
-                              audio.toggleFavorite(song);
-                            },
+                        // Favorite Heart Button
+                        IconButton(
+                          icon: Icon(
+                            audio.isSongFavorite(song.id)
+                                ? Icons.favorite_rounded
+                                : Icons.favorite_border_rounded,
+                            color: audio.isSongFavorite(song.id)
+                                ? AppColors.brightRed
+                                : AppColors.secondaryText,
+                            size: 21,
                           ),
+                          onPressed: () {
+                            LiveItHaptics.selection();
+                            audio.toggleFavorite(song);
+                          },
+                        ),
 
-                          // Play/Pause Button with Loading state support
-                          IconButton(
-                            icon: audio.isLoading
-                                ? const SizedBox(
-                                    width: 22,
-                                    height: 22,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2.2,
-                                      color: AppColors.brightRed,
+                        // Prominent Solid Circular Red Play/Pause Button
+                        GestureDetector(
+                          onTap: audio.isLoading
+                              ? null
+                              : () {
+                                  LiveItHaptics.light();
+                                  audio.togglePlayPause();
+                                },
+                          child: Container(
+                            width: 38,
+                            height: 38,
+                            decoration: const BoxDecoration(
+                              color: AppColors.brightRed,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
+                              child: audio.isLoading
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : Icon(
+                                      audio.isPlaying
+                                          ? Icons.pause_rounded
+                                          : Icons.play_arrow_rounded,
+                                      color: Colors.white,
+                                      size: 24,
                                     ),
-                                  )
-                                : Icon(
-                                    audio.isPlaying
-                                        ? Icons.pause_circle_filled
-                                        : Icons.play_circle_filled,
-                                    color: AppColors.brightRed,
-                                    size: 32,
-                                  ),
-                            onPressed: audio.isLoading
-                                ? null
-                                : () {
-                                    LiveItHaptics.light();
-                                    audio.togglePlayPause();
-                                  },
-                          ),
-
-                          // Next Button
-                          IconButton(
-                            icon: const Icon(
-                              Icons.skip_next,
-                              color: AppColors.primaryText,
-                              size: 24,
                             ),
-                            onPressed: () {
-                              LiveItHaptics.light();
-                              audio.nextSong();
-                            },
                           ),
-                        ],
-                      ),
+                        ),
+
+                        const SizedBox(width: 4),
+
+                        // Next Button
+                        IconButton(
+                          icon: const Icon(
+                            Icons.skip_next_rounded,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                          onPressed: () {
+                            LiveItHaptics.light();
+                            audio.nextSong();
+                          },
+                        ),
+                      ],
                     ),
                   ),
 
                   // Bottom Red Progress Line Indicator
-                  LinearProgressIndicator(
-                    value: progress,
-                    backgroundColor: AppColors.divider,
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                      AppColors.brightRed,
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: LinearProgressIndicator(
+                      value: progress,
+                      backgroundColor: Colors.transparent,
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                        AppColors.brightRed,
+                      ),
+                      minHeight: 2,
                     ),
-                    minHeight: 2,
                   ),
                 ],
               ),

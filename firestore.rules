@@ -1,0 +1,76 @@
+rules_version = '2';
+
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+//
+// Collection: users
+// Document ID: {userId} (matching request.auth.uid)
+// Fields:
+//   - uid: string (required) - Firebase Auth User UID
+//   - email: string (optional) - User's email address
+//   - displayName: string (optional) - User's full display name
+//   - username: string (optional) - Unique username handle
+//   - photoUrl: string (optional) - Profile image URL
+//   - createdAt: timestamp (required on create) - Document creation time
+//   - updatedAt: timestamp (required on update) - Last profile modification time
+//
+// Subcollection: users/{userId}/favorites
+// Document ID: {songId}
+// Fields:
+//   - id: string (required) - Audius or custom song ID
+//   - title: string (required) - Song title
+//   - artist: string (required) - Artist name
+//   - album: string (optional) - Album name
+//   - artworkUrl: string (optional) - Track artwork URL
+//   - streamUrl: string (required) - Streamable audio URL
+//   - durationMs: int (optional) - Track duration in milliseconds
+//   - likedAt: timestamp (required) - Timestamp when song was liked
+//
+// Subcollection: users/{userId}/playlists
+// Document ID: {playlistId}
+// Fields:
+//   - id: string (required) - Playlist ID
+//   - name: string (required) - Playlist name
+//   - createdAt: timestamp (required) - Creation timestamp
+//
+// ===============================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Default deny for unmatched collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // User Profile Document
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.uid == userId;
+      allow update: if isOwner(userId) && request.resource.data.uid == userId;
+      allow delete: if isOwner(userId);
+
+      // User's Liked / Favorite Tracks
+      match /favorites/{songId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // User's Custom Playlists
+      match /playlists/{playlistId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+  }
+}
